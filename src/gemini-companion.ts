@@ -2,11 +2,6 @@
 
 /**
  * gemini-companion — CLI entry point for the Gemini Claude Code plugin.
- *
- * Usage:
- *   node dist/gemini-companion.js setup [--check] [--json]
- *   node dist/gemini-companion.js investigate "<objective>"
- *   node dist/gemini-companion.js analyze [--path <dir>] [--focus <path>]
  */
 
 import process from 'node:process';
@@ -14,21 +9,28 @@ import { runSetup } from './commands/setup.js';
 import { runInvestigate } from './commands/investigate.js';
 import { runAnalyze } from './commands/analyze.js';
 import { runOpinion } from './commands/opinion.js';
+import { runStatus } from './commands/status.js';
+import { runResult } from './commands/result.js';
+import { enqueueBackground, runWorker } from './commands/background.js';
 
 function printUsage(): void {
   console.log(
     [
       'Usage:',
       '  gemini-companion setup [--check] [--json]',
-      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
-      '  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]',
-      '  gemini-companion opinion "<question with context>" [--path <dir>] [--standard]',
+      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--background] [--standard]',
+      '  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--background] [--standard]',
+      '  gemini-companion opinion "<question with context>" [--path <dir>] [--background] [--standard]',
+      '  gemini-companion status [job-id] [--all] [--json]',
+      '  gemini-companion result [job-id] [--json]',
       '',
       'Commands:',
       '  setup        Check authentication status and plugin readiness',
       '  investigate   Run a deep Gemini-powered codebase investigation',
       '  analyze      Produce a project context document using Gemini',
       '  opinion      Get a second opinion from Gemini on a technical question',
+      '  status       Show background job status',
+      '  result       Retrieve background job output',
     ].join('\n'),
   );
 }
@@ -69,6 +71,11 @@ async function main(): Promise<void> {
       break;
 
     case 'investigate': {
+      if (flags['background'] === true) {
+        const jobId = enqueueBackground('investigate', args, flags, process.cwd());
+        console.log(`Background job started: ${jobId}\nUse \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       const objective = args.join(' ') || String(flags['objective'] ?? '');
       await runInvestigate(objective, process.cwd(), {
         path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
@@ -78,7 +85,12 @@ async function main(): Promise<void> {
       break;
     }
 
-    case 'analyze':
+    case 'analyze': {
+      if (flags['background'] === true) {
+        const jobId = enqueueBackground('analyze', args, flags, process.cwd());
+        console.log(`Background job started: ${jobId}\nUse \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       await runAnalyze({
         path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
         focus: typeof flags['focus'] === 'string' ? flags['focus'] : undefined,
@@ -86,13 +98,46 @@ async function main(): Promise<void> {
         forceStandard: flags['standard'] === true,
       });
       break;
+    }
 
     case 'opinion': {
+      if (flags['background'] === true) {
+        const jobId = enqueueBackground('opinion', args, flags, process.cwd());
+        console.log(`Background job started: ${jobId}\nUse \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       const question = args.join(' ') || String(flags['question'] ?? '');
       await runOpinion(question, process.cwd(), {
         path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
         forceStandard: flags['standard'] === true,
       });
+      break;
+    }
+
+    case 'status':
+      await runStatus(process.cwd(), {
+        jobId: args[0],
+        all: flags['all'] === true,
+        json: flags['json'] === true,
+      });
+      break;
+
+    case 'result':
+      await runResult(process.cwd(), {
+        jobId: args[0],
+        json: flags['json'] === true,
+      });
+      break;
+
+    // Internal: background worker entry point
+    case '_worker': {
+      const jobId = typeof flags['job-id'] === 'string' ? flags['job-id'] : '';
+      const workerCwd = typeof flags['cwd'] === 'string' ? flags['cwd'] : process.cwd();
+      if (!jobId) {
+        console.error('Worker requires --job-id');
+        process.exit(1);
+      }
+      await runWorker(jobId, workerCwd);
       break;
     }
 

@@ -22,17 +22,39 @@ Command selection:
 
 - **`investigate`**: For deep codebase exploration with a specific objective.
 - **`opinion`**: For getting a second opinion on a technical question or decision.
+- **`analyze`**: For producing a broad project context document.
 
-When choosing between them:
-- If the user asks "how does X work?" or "find the bug in Y" → `investigate`
-- If the user asks "should I use X or Y?" or "what do you think about this approach?" → `opinion`
-- If unclear, prefer `opinion` for questions about decisions, `investigate` for questions about code.
+When choosing:
+- "how does X work?" or "find the bug in Y" → `investigate`
+- "should I use X or Y?" or "what do you think about this approach?" → `opinion`
+- "give me an overview of this project" → `analyze`
+
+Background execution:
+
+Decide whether to add `--background` based on the expected scope:
+
+- **Always foreground** (never add `--background`):
+  - `opinion` — quick focused consultation
+  - `investigate` with `--path` narrowing to a small directory
+
+- **Prefer background** (add `--background`):
+  - `analyze` on a large project (many modules/directories)
+  - `investigate` on the full project root without `--path`
+  - Any request the user explicitly says should run in the background
+
+- **Ask the user** when uncertain: "This looks like a large investigation. Want me to run it in the background so you can keep working?"
+
+When using `--background`, inform the user:
+- The job ID returned
+- They can check progress with `/gemini:status {job-id}`
+- They can get results with `/gemini:result {job-id}`
 
 Forwarding rules:
 
 - Use exactly one `Bash` call per request.
-- For investigations: `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" investigate "..."`
+- For investigations: `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" investigate "..." [--path <dir>] [--background]`
 - For opinions: `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" opinion "..."`
+- For analysis: `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" analyze [--path <dir>] [--background]`
 
 Context enrichment for opinion:
 
@@ -43,17 +65,6 @@ Include in the opinion prompt:
 2. **The specific question or decision** they need input on.
 3. **Approaches already considered** and any trade-offs discussed.
 4. **Relevant code snippets** if the question is about a specific implementation.
-
-Example:
-```
-node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" opinion "Question: Should we use a mutex or channel for the async queue?
-
-Context: We are working on gormx, a Go GORM wrapper with an async operation queue. The current implementation uses a buffered channel (cap 5M) with a background goroutine consumer. The user is considering switching to a mutex-based approach for the queue to reduce memory overhead.
-
-Current code (async.go): The asyncQueueHandler reads from a channel in a for-select loop and processes asyncBundle objects.
-
-Trade-offs discussed so far: Channel is simpler but pre-allocates buffer memory. Mutex would allow dynamic sizing but adds lock contention risk."
-```
 
 General rules:
 

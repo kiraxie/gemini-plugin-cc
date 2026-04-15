@@ -2184,7 +2184,7 @@ var require_lib2 = __commonJS({
       let accum = [];
       let accumBytes = 0;
       let abort = false;
-      return new Body.Promise(function(resolve8, reject) {
+      return new Body.Promise(function(resolve10, reject) {
         let resTimeout;
         if (_this4.timeout) {
           resTimeout = setTimeout(function() {
@@ -2218,7 +2218,7 @@ var require_lib2 = __commonJS({
           }
           clearTimeout(resTimeout);
           try {
-            resolve8(Buffer.concat(accum, accumBytes));
+            resolve10(Buffer.concat(accum, accumBytes));
           } catch (err) {
             reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
           }
@@ -2893,7 +2893,7 @@ var require_lib2 = __commonJS({
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
       Body.Promise = fetch2.Promise;
-      return new fetch2.Promise(function(resolve8, reject) {
+      return new fetch2.Promise(function(resolve10, reject) {
         const request = new Request(url, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -3026,7 +3026,7 @@ var require_lib2 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve8(fetch2(new Request(locationURL, requestOpts)));
+                resolve10(fetch2(new Request(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -3047,7 +3047,7 @@ var require_lib2 = __commonJS({
           const codings = headers.get("Content-Encoding");
           if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
             response = new Response(body, response_options);
-            resolve8(response);
+            resolve10(response);
             return;
           }
           const zlibOptions = {
@@ -3057,7 +3057,7 @@ var require_lib2 = __commonJS({
           if (codings == "gzip" || codings == "x-gzip") {
             body = body.pipe(zlib.createGunzip(zlibOptions));
             response = new Response(body, response_options);
-            resolve8(response);
+            resolve10(response);
             return;
           }
           if (codings == "deflate" || codings == "x-deflate") {
@@ -3069,12 +3069,12 @@ var require_lib2 = __commonJS({
                 body = body.pipe(zlib.createInflateRaw());
               }
               response = new Response(body, response_options);
-              resolve8(response);
+              resolve10(response);
             });
             raw.on("end", function() {
               if (!response) {
                 response = new Response(body, response_options);
-                resolve8(response);
+                resolve10(response);
               }
             });
             return;
@@ -3082,11 +3082,11 @@ var require_lib2 = __commonJS({
           if (codings == "br" && typeof zlib.createBrotliDecompress === "function") {
             body = body.pipe(zlib.createBrotliDecompress());
             response = new Response(body, response_options);
-            resolve8(response);
+            resolve10(response);
             return;
           }
           response = new Response(body, response_options);
-          resolve8(response);
+          resolve10(response);
         });
         writeToStream(req, request);
       });
@@ -3445,8 +3445,8 @@ var require_retry = __commonJS({
       }
       const delay = getNextRetryDelay(config);
       err.config.retryConfig.currentRetryAttempt += 1;
-      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve8) => {
-        setTimeout(resolve8, delay);
+      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve10) => {
+        setTimeout(resolve10, delay);
       });
       if (config.onRetryAttempt) {
         config.onRetryAttempt(err);
@@ -4576,8 +4576,8 @@ var require_helpers = __commonJS({
     function req(url, opts = {}) {
       const href = typeof url === "string" ? url : url.href;
       const req2 = (href.startsWith("https:") ? https : http).request(url, opts);
-      const promise = new Promise((resolve8, reject) => {
-        req2.once("response", resolve8).once("error", reject).end();
+      const promise = new Promise((resolve10, reject) => {
+        req2.once("response", resolve10).once("error", reject).end();
       });
       req2.then = promise.then.bind(promise);
       return req2;
@@ -4754,7 +4754,7 @@ var require_parse_proxy_response = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve8, reject) => {
+      return new Promise((resolve10, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -4820,7 +4820,7 @@ var require_parse_proxy_response = __commonJS({
           }
           debug("got proxy server response: %o %o", firstLine, headers);
           cleanup();
-          resolve8({
+          resolve10({
             connect: {
               statusCode,
               statusText,
@@ -5121,11 +5121,11 @@ var require_gaxios = __commonJS({
           if (!opts.validateStatus(translatedResponse.status)) {
             if (opts.responseType === "stream") {
               let response = "";
-              await new Promise((resolve8) => {
+              await new Promise((resolve10) => {
                 (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("data", (chunk) => {
                   response += chunk;
                 });
-                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve8);
+                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve10);
               });
               translatedResponse.data = response;
             }
@@ -10617,7 +10617,7 @@ var require_jwtaccess = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve10, reject) => {
           if (!inputStream) {
             reject(new Error("Must pass in a stream containing the service account auth settings."));
           }
@@ -10626,7 +10626,7 @@ var require_jwtaccess = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve8();
+              resolve10();
             } catch (err) {
               reject(err);
             }
@@ -10845,7 +10845,7 @@ var require_jwtclient = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve10, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the service account auth settings.");
           }
@@ -10854,7 +10854,7 @@ var require_jwtclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve8();
+              resolve10();
             } catch (e) {
               reject(e);
             }
@@ -10974,7 +10974,7 @@ var require_refreshclient = __commonJS({
         }
       }
       async fromStreamAsync(inputStream) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve10, reject) => {
           if (!inputStream) {
             return reject(new Error("Must pass in a stream containing the user refresh token."));
           }
@@ -10983,7 +10983,7 @@ var require_refreshclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              return resolve8();
+              return resolve10();
             } catch (err) {
               return reject(err);
             }
@@ -12544,7 +12544,7 @@ var require_pluggable_auth_handler = __commonJS({
        * @return A promise that resolves with the executable response.
        */
       retrieveResponseFromExecutable(envMap) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve10, reject) => {
           const child = childProcess.spawn(this.commandComponents[0], this.commandComponents.slice(1), {
             env: { ...process.env, ...Object.fromEntries(envMap) }
           });
@@ -12566,7 +12566,7 @@ var require_pluggable_auth_handler = __commonJS({
               try {
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
-                return resolve8(response);
+                return resolve10(response);
               } catch (error) {
                 if (error instanceof executable_response_1.ExecutableResponseError) {
                   return reject(error);
@@ -13416,7 +13416,7 @@ var require_googleauth = __commonJS({
         }
       }
       fromStreamAsync(inputStream, options) {
-        return new Promise((resolve8, reject) => {
+        return new Promise((resolve10, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the Google auth settings.");
           }
@@ -13426,7 +13426,7 @@ var require_googleauth = __commonJS({
               try {
                 const data = JSON.parse(chunks.join(""));
                 const r = this._cacheClientFromJSON(data, options);
-                return resolve8(r);
+                return resolve10(r);
               } catch (err) {
                 if (!this.keyFilename)
                   throw err;
@@ -13436,7 +13436,7 @@ var require_googleauth = __commonJS({
                 });
                 this.cachedCredential = client;
                 this.setGapicJWTValues(client);
-                return resolve8(client);
+                return resolve10(client);
               }
             } catch (err) {
               return reject(err);
@@ -13472,17 +13472,17 @@ var require_googleauth = __commonJS({
        * Run the Google Cloud SDK command that prints the default project ID
        */
       async getDefaultServiceProjectId() {
-        return new Promise((resolve8) => {
+        return new Promise((resolve10) => {
           (0, child_process_1.exec)("gcloud config config-helper --format json", (err, stdout) => {
             if (!err && stdout) {
               try {
                 const projectId = JSON.parse(stdout).configuration.properties.core.project;
-                resolve8(projectId);
+                resolve10(projectId);
                 return;
               } catch (e) {
               }
             }
-            resolve8(null);
+            resolve10(null);
           });
         });
       }
@@ -14091,6 +14091,142 @@ var require_src6 = __commonJS({
     } });
     var auth = new googleauth_1.GoogleAuth();
     exports2.auth = auth;
+  }
+});
+
+// src/lib/state.ts
+var state_exports = {};
+__export(state_exports, {
+  appendLog: () => appendLog,
+  createJob: () => createJob,
+  generateJobId: () => generateJobId,
+  getSessionId: () => getSessionId,
+  jobLogPath: () => jobLogPath,
+  listJobs: () => listJobs,
+  readJobFile: () => readJobFile,
+  readLogTail: () => readLogTail,
+  resolveStateDir: () => resolveStateDir,
+  updateJob: () => updateJob,
+  writeJobFile: () => writeJobFile
+});
+function resolveStateDir(cwd) {
+  const workspaceRoot = (0, import_node_path9.resolve)(cwd);
+  const slug = (0, import_node_path9.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
+  const hash = (0, import_node_crypto2.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
+  const pluginDataDir = process.env[PLUGIN_DATA_ENV];
+  const stateRoot = pluginDataDir ? (0, import_node_path9.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
+  return (0, import_node_path9.join)(stateRoot, `${slug}-${hash}`);
+}
+function ensureDir(dir) {
+  (0, import_node_fs7.mkdirSync)(dir, { recursive: true });
+}
+function stateFilePath(stateDir) {
+  return (0, import_node_path9.join)(stateDir, "state.json");
+}
+function loadState(stateDir) {
+  const filePath = stateFilePath(stateDir);
+  if (!(0, import_node_fs7.existsSync)(filePath)) {
+    return { version: 1, jobs: [] };
+  }
+  try {
+    return JSON.parse((0, import_node_fs7.readFileSync)(filePath, "utf-8"));
+  } catch {
+    return { version: 1, jobs: [] };
+  }
+}
+function saveState(stateDir, state) {
+  ensureDir(stateDir);
+  if (state.jobs.length > MAX_JOBS) {
+    state.jobs = state.jobs.slice(0, MAX_JOBS);
+  }
+  (0, import_node_fs7.writeFileSync)(stateFilePath(stateDir), JSON.stringify(state, null, 2), "utf-8");
+}
+function jobsDir(stateDir) {
+  return (0, import_node_path9.join)(stateDir, "jobs");
+}
+function jobFilePath(stateDir, jobId) {
+  return (0, import_node_path9.join)(jobsDir(stateDir), `${jobId}.json`);
+}
+function jobLogPath(stateDir, jobId) {
+  return (0, import_node_path9.join)(jobsDir(stateDir), `${jobId}.log`);
+}
+function writeJobFile(stateDir, job) {
+  const dir = jobsDir(stateDir);
+  ensureDir(dir);
+  (0, import_node_fs7.writeFileSync)(jobFilePath(stateDir, job.id), JSON.stringify(job, null, 2), "utf-8");
+}
+function readJobFile(stateDir, jobId) {
+  const filePath = jobFilePath(stateDir, jobId);
+  if (!(0, import_node_fs7.existsSync)(filePath)) return null;
+  try {
+    return JSON.parse((0, import_node_fs7.readFileSync)(filePath, "utf-8"));
+  } catch {
+    return null;
+  }
+}
+function appendLog(stateDir, jobId, message) {
+  const logFile = jobLogPath(stateDir, jobId);
+  ensureDir(jobsDir(stateDir));
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  (0, import_node_fs7.writeFileSync)(logFile, `[${time}] ${message}
+`, { flag: "a" });
+}
+function readLogTail(stateDir, jobId, maxLines = 10) {
+  const logFile = jobLogPath(stateDir, jobId);
+  if (!(0, import_node_fs7.existsSync)(logFile)) return [];
+  try {
+    const content = (0, import_node_fs7.readFileSync)(logFile, "utf-8");
+    const lines = content.trim().split("\n");
+    return lines.slice(-maxLines);
+  } catch {
+    return [];
+  }
+}
+function generateJobId() {
+  const ts = Date.now();
+  const rand = (0, import_node_crypto2.randomUUID)().slice(0, 8);
+  return `job-${ts}-${rand}`;
+}
+function getSessionId() {
+  return process.env[SESSION_ID_ENV] || void 0;
+}
+function createJob(stateDir, job) {
+  const state = loadState(stateDir);
+  state.jobs.unshift(job);
+  saveState(stateDir, state);
+  writeJobFile(stateDir, job);
+}
+function updateJob(stateDir, jobId, updates) {
+  const state = loadState(stateDir);
+  const idx = state.jobs.findIndex((j) => j.id === jobId);
+  if (idx >= 0) {
+    state.jobs[idx] = { ...state.jobs[idx], ...updates };
+    saveState(stateDir, state);
+  }
+  const full = readJobFile(stateDir, jobId);
+  if (full) {
+    writeJobFile(stateDir, { ...full, ...updates });
+  }
+}
+function listJobs(stateDir, sessionId) {
+  const state = loadState(stateDir);
+  if (sessionId) {
+    return state.jobs.filter((j) => j.sessionId === sessionId);
+  }
+  return state.jobs;
+}
+var import_node_crypto2, import_node_fs7, import_node_path9, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
+var init_state = __esm({
+  "src/lib/state.ts"() {
+    "use strict";
+    import_node_crypto2 = require("node:crypto");
+    import_node_fs7 = require("node:fs");
+    import_node_path9 = require("node:path");
+    import_node_os2 = require("node:os");
+    MAX_JOBS = 50;
+    PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
+    SESSION_ID_ENV = "GEMINI_COMPANION_SESSION_ID";
+    FALLBACK_STATE_ROOT = (0, import_node_path9.join)((0, import_node_os2.tmpdir)(), "gemini-companion");
   }
 });
 
@@ -15864,21 +16000,266 @@ function progress5(message) {
   console.error(`[${time}] ${message}`);
 }
 
+// src/commands/status.ts
+init_state();
+async function runStatus(cwd, options = {}) {
+  const stateDir = resolveStateDir(cwd);
+  const sessionId = options.all ? void 0 : getSessionId();
+  if (options.jobId) {
+    const job = readJobFile(stateDir, options.jobId);
+    if (!job) {
+      console.error(`Job not found: ${options.jobId}`);
+      process.exit(1);
+    }
+    if (options.json) {
+      console.log(JSON.stringify(job, null, 2));
+      return;
+    }
+    const logTail = readLogTail(stateDir, job.id, 15);
+    console.log(renderJobDetail(job, logTail));
+    return;
+  }
+  const jobs = listJobs(stateDir, sessionId);
+  if (jobs.length === 0) {
+    console.log("No background jobs found.");
+    return;
+  }
+  if (options.json) {
+    console.log(JSON.stringify(jobs, null, 2));
+    return;
+  }
+  const running = jobs.filter((j) => j.status === "queued" || j.status === "running");
+  const finished = jobs.filter((j) => j.status === "completed" || j.status === "failed");
+  const sections = [];
+  if (running.length > 0) {
+    sections.push("## Running");
+    for (const job of running) {
+      const logTail = readLogTail(stateDir, job.id, 3);
+      const lastLine = logTail[logTail.length - 1] ?? "";
+      sections.push(`- **${job.id}** \`${job.kind}\` \u2014 ${job.summary} [${job.status}] ${lastLine}`);
+    }
+  }
+  if (finished.length > 0) {
+    sections.push("## Recent");
+    for (const job of finished.slice(0, 10)) {
+      const icon = job.status === "completed" ? "\u2713" : "\u2717";
+      sections.push(`- ${icon} **${job.id}** \`${job.kind}\` \u2014 ${job.summary} [${job.status}]`);
+    }
+  }
+  console.log(sections.join("\n\n"));
+}
+function renderJobDetail(job, logTail) {
+  const sections = [];
+  sections.push(`## Job: ${job.id}`);
+  sections.push(`**Kind:** ${job.kind}`);
+  sections.push(`**Status:** ${job.status}`);
+  sections.push(`**Phase:** ${job.phase}`);
+  sections.push(`**Summary:** ${job.summary}`);
+  sections.push(`**Created:** ${job.createdAt}`);
+  if (job.startedAt) sections.push(`**Started:** ${job.startedAt}`);
+  if (job.completedAt) sections.push(`**Completed:** ${job.completedAt}`);
+  if (job.errorMessage) sections.push(`**Error:** ${job.errorMessage}`);
+  if (logTail.length > 0) {
+    sections.push("\n### Recent Log");
+    sections.push("```");
+    sections.push(logTail.join("\n"));
+    sections.push("```");
+  }
+  return sections.join("\n");
+}
+
+// src/commands/result.ts
+init_state();
+async function runResult(cwd, options = {}) {
+  const stateDir = resolveStateDir(cwd);
+  let jobId = options.jobId;
+  if (!jobId) {
+    const sessionId = getSessionId();
+    const jobs = listJobs(stateDir, sessionId);
+    const finished = jobs.find((j) => j.status === "completed" || j.status === "failed");
+    if (!finished) {
+      console.error("No completed jobs found.");
+      process.exit(1);
+    }
+    jobId = finished.id;
+  }
+  const job = readJobFile(stateDir, jobId);
+  if (!job) {
+    console.error(`Job not found: ${jobId}`);
+    process.exit(1);
+  }
+  if (job.status === "queued" || job.status === "running") {
+    console.error(`Job ${jobId} is still ${job.status}. Use /gemini:status to check progress.`);
+    process.exit(1);
+  }
+  if (options.json) {
+    console.log(JSON.stringify({
+      id: job.id,
+      kind: job.kind,
+      status: job.status,
+      result: job.result,
+      errorMessage: job.errorMessage
+    }, null, 2));
+    return;
+  }
+  if (job.status === "failed") {
+    console.log(`## Job Failed: ${job.id}
+
+**Error:** ${job.errorMessage ?? "Unknown error"}`);
+    return;
+  }
+  if (job.result) {
+    console.log(job.result);
+  } else {
+    console.log("Job completed but produced no output.");
+  }
+}
+
+// src/commands/background.ts
+var import_node_child_process2 = require("node:child_process");
+var import_node_path10 = require("node:path");
+var import_node_url = require("node:url");
+init_state();
+var import_meta = {};
+function enqueueBackground(command, args, flags, cwd) {
+  const stateDir = resolveStateDir(cwd);
+  const jobId = generateJobId();
+  const summary = args.join(" ").slice(0, 80) || command;
+  const job = {
+    id: jobId,
+    kind: command,
+    title: `Gemini ${command}`,
+    summary,
+    status: "queued",
+    phase: "queued",
+    cwd,
+    createdAt: (/* @__PURE__ */ new Date()).toISOString(),
+    sessionId: getSessionId(),
+    request: { command, args, flags, cwd }
+  };
+  createJob(stateDir, job);
+  appendLog(stateDir, jobId, `Queued for background execution: ${command} "${summary}"`);
+  const scriptPath = getScriptPath();
+  const child = (0, import_node_child_process2.spawn)(process.execPath, [scriptPath, "_worker", "--job-id", jobId, "--cwd", cwd], {
+    cwd,
+    env: { ...process.env, GEMINI_COMPANION_SESSION_ID: getSessionId() ?? "" },
+    detached: true,
+    stdio: "ignore"
+  });
+  child.unref();
+  updateJob(stateDir, jobId, { pid: child.pid ?? null });
+  return jobId;
+}
+function getScriptPath() {
+  if (typeof __filename !== "undefined") {
+    return __filename;
+  }
+  return (0, import_node_url.fileURLToPath)(import_meta.url);
+}
+async function runWorker(jobId, cwd) {
+  const stateDir = resolveStateDir(cwd);
+  const job = await Promise.resolve().then(() => (init_state(), state_exports)).then((m) => m.readJobFile(stateDir, jobId));
+  if (!job) {
+    console.error(`Worker: Job not found: ${jobId}`);
+    process.exit(1);
+  }
+  const { command, args, flags } = job.request;
+  updateJob(stateDir, jobId, {
+    status: "running",
+    phase: "starting",
+    startedAt: (/* @__PURE__ */ new Date()).toISOString()
+  });
+  appendLog(stateDir, jobId, "Worker started.");
+  const originalStderrWrite = process.stderr.write.bind(process.stderr);
+  process.stderr.write = ((chunk) => {
+    const text = typeof chunk === "string" ? chunk : chunk.toString();
+    if (text.trim()) {
+      appendLog(stateDir, jobId, text.trim());
+    }
+    return true;
+  });
+  try {
+    const auth = await createAuth();
+    const forceStandard = flags["standard"] === true;
+    const client = new GeminiClient(auth, forceStandard);
+    const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
+    const scopePath = typeof flags["path"] === "string" ? flags["path"] : void 0;
+    const effectiveCwd = scopePath ? (0, import_node_path10.resolve)(cwd, scopePath) : cwd;
+    let result;
+    let rendered;
+    switch (command) {
+      case "investigate": {
+        const objective = args.join(" ");
+        const config = createInvestigatorConfig(objective, effectiveCwd, useCodeAssist);
+        result = await runAgentLoop(client, config);
+        rendered = renderInvestigationReport(result.result);
+        break;
+      }
+      case "analyze": {
+        const focus = typeof flags["focus"] === "string" ? flags["focus"] : void 0;
+        const config = createAnalyzerConfig(effectiveCwd, useCodeAssist, focus);
+        result = await runAgentLoop(client, config);
+        rendered = renderAnalysisReport(result.result);
+        break;
+      }
+      case "opinion": {
+        const question = args.join(" ");
+        const config = createOpinionConfig(question, effectiveCwd, useCodeAssist);
+        result = await runAgentLoop(client, config);
+        rendered = renderOpinionReport(result.result);
+        break;
+      }
+      default:
+        throw new Error(`Unknown command for worker: ${command}`);
+    }
+    const writePath = typeof flags["write"] === "string" ? flags["write"] : void 0;
+    if (writePath) {
+      const { writeFileSync: writeFileSync4, mkdirSync: mkdirSync4 } = await import("node:fs");
+      const outPath = (0, import_node_path10.resolve)(cwd, writePath);
+      mkdirSync4((0, import_node_path10.dirname)(outPath), { recursive: true });
+      writeFileSync4(outPath, rendered, "utf-8");
+      appendLog(stateDir, jobId, `Report saved to: ${outPath}`);
+    }
+    updateJob(stateDir, jobId, {
+      status: "completed",
+      phase: "done",
+      completedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      result: rendered
+    });
+    appendLog(stateDir, jobId, `Completed (${result.terminateReason}).`);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    updateJob(stateDir, jobId, {
+      status: "failed",
+      phase: "failed",
+      completedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      errorMessage: message
+    });
+    appendLog(stateDir, jobId, `Failed: ${message}`);
+  } finally {
+    process.stderr.write = originalStderrWrite;
+  }
+}
+
 // src/gemini-companion.ts
 function printUsage() {
   console.log(
     [
       "Usage:",
       "  gemini-companion setup [--check] [--json]",
-      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
-      "  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]",
-      '  gemini-companion opinion "<question with context>" [--path <dir>] [--standard]',
+      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--background] [--standard]',
+      "  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--background] [--standard]",
+      '  gemini-companion opinion "<question with context>" [--path <dir>] [--background] [--standard]',
+      "  gemini-companion status [job-id] [--all] [--json]",
+      "  gemini-companion result [job-id] [--json]",
       "",
       "Commands:",
       "  setup        Check authentication status and plugin readiness",
       "  investigate   Run a deep Gemini-powered codebase investigation",
       "  analyze      Produce a project context document using Gemini",
-      "  opinion      Get a second opinion from Gemini on a technical question"
+      "  opinion      Get a second opinion from Gemini on a technical question",
+      "  status       Show background job status",
+      "  result       Retrieve background job output"
     ].join("\n")
   );
 }
@@ -15913,6 +16294,12 @@ async function main() {
       });
       break;
     case "investigate": {
+      if (flags["background"] === true) {
+        const jobId = enqueueBackground("investigate", args, flags, import_node_process.default.cwd());
+        console.log(`Background job started: ${jobId}
+Use \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       const objective = args.join(" ") || String(flags["objective"] ?? "");
       await runInvestigate(objective, import_node_process.default.cwd(), {
         path: typeof flags["path"] === "string" ? flags["path"] : void 0,
@@ -15921,7 +16308,13 @@ async function main() {
       });
       break;
     }
-    case "analyze":
+    case "analyze": {
+      if (flags["background"] === true) {
+        const jobId = enqueueBackground("analyze", args, flags, import_node_process.default.cwd());
+        console.log(`Background job started: ${jobId}
+Use \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       await runAnalyze({
         path: typeof flags["path"] === "string" ? flags["path"] : void 0,
         focus: typeof flags["focus"] === "string" ? flags["focus"] : void 0,
@@ -15929,12 +16322,43 @@ async function main() {
         forceStandard: flags["standard"] === true
       });
       break;
+    }
     case "opinion": {
+      if (flags["background"] === true) {
+        const jobId = enqueueBackground("opinion", args, flags, import_node_process.default.cwd());
+        console.log(`Background job started: ${jobId}
+Use \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\` when done.`);
+        break;
+      }
       const question = args.join(" ") || String(flags["question"] ?? "");
       await runOpinion(question, import_node_process.default.cwd(), {
         path: typeof flags["path"] === "string" ? flags["path"] : void 0,
         forceStandard: flags["standard"] === true
       });
+      break;
+    }
+    case "status":
+      await runStatus(import_node_process.default.cwd(), {
+        jobId: args[0],
+        all: flags["all"] === true,
+        json: flags["json"] === true
+      });
+      break;
+    case "result":
+      await runResult(import_node_process.default.cwd(), {
+        jobId: args[0],
+        json: flags["json"] === true
+      });
+      break;
+    // Internal: background worker entry point
+    case "_worker": {
+      const jobId = typeof flags["job-id"] === "string" ? flags["job-id"] : "";
+      const workerCwd = typeof flags["cwd"] === "string" ? flags["cwd"] : import_node_process.default.cwd();
+      if (!jobId) {
+        console.error("Worker requires --job-id");
+        import_node_process.default.exit(1);
+      }
+      await runWorker(jobId, workerCwd);
       break;
     }
     case "help":
