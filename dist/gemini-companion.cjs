@@ -13019,7 +13019,7 @@ var require_googleauth = __commonJS({
     var child_process_1 = require("child_process");
     var fs = require("fs");
     var gcpMetadata = require_src4();
-    var os = require("os");
+    var os2 = require("os");
     var path = require("path");
     var crypto_1 = require_crypto3();
     var transporters_1 = require_transporters();
@@ -13460,7 +13460,7 @@ var require_googleauth = __commonJS({
        * @api private
        */
       _isWindows() {
-        const sys = os.platform();
+        const sys = os2.platform();
         if (sys && sys.length >= 3) {
           if (sys.substring(0, 3).toLowerCase() === "win") {
             return true;
@@ -14218,6 +14218,10 @@ ${report.models.map((m) => `- ${m}`).join("\n")}
 var import_node_fs5 = require("node:fs");
 var import_node_path6 = require("node:path");
 
+// src/lib/code-assist-client.ts
+var import_node_crypto = require("node:crypto");
+var os = __toESM(require("node:os"), 1);
+
 // src/lib/sse-parser.ts
 var import_node_readline = require("node:readline");
 var import_node_stream = require("node:stream");
@@ -14248,29 +14252,33 @@ async function* parseSSEStream(stream) {
 // src/lib/code-assist-client.ts
 var CODE_ASSIST_ENDPOINT = process.env["CODE_ASSIST_ENDPOINT"] ?? "https://cloudcode-pa.googleapis.com";
 var CODE_ASSIST_API_VERSION = process.env["CODE_ASSIST_API_VERSION"] ?? "v1internal";
+var PLUGIN_VERSION = "0.1.0";
 function getBaseUrl() {
   return `${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}`;
 }
 function getMethodUrl(method) {
   return `${getBaseUrl()}:${method}`;
 }
-function toVertexRequest(params) {
+function buildUserAgent() {
+  return `GeminiPlugin-ClaudeCode/${PLUGIN_VERSION} (${os.platform()}; ${os.arch()})`;
+}
+function toVertexRequest(params, sessionId) {
   const systemInstruction = params.systemInstruction ? { role: "user", parts: params.systemInstruction.parts } : void 0;
   return {
     contents: params.contents,
     systemInstruction,
     tools: params.tools,
     toolConfig: params.toolConfig,
-    generationConfig: params.generationConfig
+    generationConfig: params.generationConfig,
+    session_id: sessionId
   };
 }
-function toCARequest(params, project, enableCredits) {
+function toCARequest(params, sessionId, project, enableCredits) {
   return {
     model: params.model,
     project,
-    user_prompt_id: crypto.randomUUID(),
-    request: toVertexRequest(params),
-    // Enable paid credits (Google One AI) if user has a paid tier
+    user_prompt_id: (0, import_node_crypto.randomUUID)(),
+    request: toVertexRequest(params, sessionId),
     enabled_credit_types: enableCredits ? ["GOOGLE_ONE_AI"] : void 0
   };
 }
@@ -14284,10 +14292,22 @@ function fromCAResponse(res) {
 var CodeAssistClient = class {
   constructor(oauthClient) {
     this.oauthClient = oauthClient;
+    this.sessionId = (0, import_node_crypto.randomUUID)();
+    this.userAgent = buildUserAgent();
   }
   projectId;
   initialized = false;
   hasPaidTier = false;
+  /** Stable session ID for the entire CLI invocation (matches Gemini CLI behavior). */
+  sessionId;
+  /** User-Agent header sent with every request. */
+  userAgent;
+  get headers() {
+    return {
+      "Content-Type": "application/json",
+      "User-Agent": this.userAgent
+    };
+  }
   /**
    * Initialize the client by calling loadCodeAssist to get the project ID.
    * This must be called before making generateContent requests.
@@ -14313,7 +14333,7 @@ var CodeAssistClient = class {
       if (loadRes.currentTier) {
         this.initialized = true;
         if (process.env["DEBUG"]) {
-          console.error(`[CodeAssist] Initialized. Project: ${this.projectId}, Tier: ${loadRes.paidTier?.id ?? loadRes.currentTier.id ?? "unknown"}, PaidCredits: ${this.hasPaidTier}`);
+          console.error(`[CodeAssist] Initialized. Project: ${this.projectId}, Tier: ${loadRes.paidTier?.id ?? loadRes.currentTier.id ?? "unknown"}, PaidCredits: ${this.hasPaidTier}, SessionId: ${this.sessionId}`);
         }
         return;
       }
@@ -14340,7 +14360,7 @@ var CodeAssistClient = class {
       }
       this.initialized = true;
       if (process.env["DEBUG"]) {
-        console.error(`[CodeAssist] Onboarded. Project: ${this.projectId}`);
+        console.error(`[CodeAssist] Onboarded. Project: ${this.projectId}, SessionId: ${this.sessionId}`);
       }
     } catch (err) {
       this.initialized = true;
@@ -14351,11 +14371,11 @@ var CodeAssistClient = class {
   }
   async generateContent(params) {
     await this.init();
-    const body = toCARequest(params, this.projectId, this.hasPaidTier);
+    const body = toCARequest(params, this.sessionId, this.projectId, this.hasPaidTier);
     const res = await this.oauthClient.request({
       url: getMethodUrl("generateContent"),
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: "json",
       retryConfig: {
@@ -14369,16 +14389,15 @@ var CodeAssistClient = class {
   }
   async *generateContentStream(params) {
     await this.init();
-    const body = toCARequest(params, this.projectId, this.hasPaidTier);
+    const body = toCARequest(params, this.sessionId, this.projectId, this.hasPaidTier);
     if (process.env["DEBUG"]) {
-      console.error("[CodeAssist] Request URL:", getMethodUrl("streamGenerateContent"));
-      console.error("[CodeAssist] Model:", body.model, "| Project:", body.project);
+      console.error("[CodeAssist] Model:", body.model, "| Project:", body.project, "| Session:", this.sessionId);
     }
     const res = await this.oauthClient.request({
       url: getMethodUrl("streamGenerateContent"),
       method: "POST",
       params: { alt: "sse" },
-      headers: { "Content-Type": "application/json" },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: "stream",
       retry: false
@@ -14392,7 +14411,7 @@ var CodeAssistClient = class {
     const res = await this.oauthClient.request({
       url: getMethodUrl(method),
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: "json",
       retryConfig: {
@@ -14408,7 +14427,7 @@ var CodeAssistClient = class {
     const res = await this.oauthClient.request({
       url: `${getBaseUrl()}/${name}`,
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: this.headers,
       responseType: "json"
     });
     return res.data;
@@ -15389,10 +15408,73 @@ function renderInvestigationReport(raw) {
   }
   return sections.join("\n\n");
 }
+function renderAnalysisReport(raw) {
+  let report;
+  try {
+    report = JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+  const sections = [];
+  sections.push("# Project Context");
+  if (report.ProjectSummary) {
+    sections.push("## Overview");
+    sections.push(report.ProjectSummary);
+  }
+  if (report.TechStack) {
+    const ts = report.TechStack;
+    const parts = [];
+    if (ts.language) parts.push(`**Language:** ${ts.language}`);
+    if (ts.framework) parts.push(`**Framework:** ${ts.framework}`);
+    if (parts.length > 0) {
+      sections.push("## Tech Stack");
+      sections.push(parts.join("\n"));
+    }
+    if (ts.keyDependencies && ts.keyDependencies.length > 0) {
+      const deps = ts.keyDependencies.map((d) => `- **${d.name ?? "?"}** \u2014 ${d.purpose ?? ""}`).join("\n");
+      sections.push("### Key Dependencies");
+      sections.push(deps);
+    }
+  }
+  if (report.ModuleMap && report.ModuleMap.length > 0) {
+    sections.push("## Module Map");
+    for (const mod of report.ModuleMap) {
+      sections.push(`### \`${mod.path ?? "unknown"}\``);
+      if (mod.role) sections.push(mod.role);
+      if (mod.keyFiles?.length) {
+        sections.push("**Key files:** " + mod.keyFiles.map((f) => `\`${f}\``).join(", "));
+      }
+      if (mod.keyExports?.length) {
+        sections.push("**Key exports:** " + mod.keyExports.map((s) => `\`${s}\``).join(", "));
+      }
+    }
+  }
+  if (report.Conventions && report.Conventions.length > 0) {
+    sections.push("## Conventions & Patterns");
+    for (const conv of report.Conventions) {
+      sections.push(`### ${conv.pattern ?? "Unknown Pattern"}`);
+      if (conv.description) sections.push(conv.description);
+      if (conv.examples?.length) {
+        sections.push("**Examples:** " + conv.examples.map((e) => `\`${e}\``).join(", "));
+      }
+    }
+  }
+  if (report.EntryPoints && report.EntryPoints.length > 0) {
+    sections.push("## Entry Points");
+    const entries = report.EntryPoints.map((e) => `- \`${e.path ?? "?"}\` \u2014 ${e.description ?? ""}`).join("\n");
+    sections.push(entries);
+  }
+  if (report.ArchitectureNotes) {
+    sections.push("## Architecture Notes");
+    sections.push(report.ArchitectureNotes);
+  }
+  return sections.join("\n\n");
+}
 
 // src/commands/investigate.ts
 async function runInvestigate(objective, cwd, options = {}) {
-  const { forceStandard = false, writePath } = options;
+  const { path: scopePath, forceStandard = false, writePath } = options;
+  const effectiveCwd = scopePath ? (0, import_node_path6.resolve)(cwd, scopePath) : cwd;
   if (!objective.trim()) {
     console.error("Error: Please provide an investigation objective.");
     process.exit(1);
@@ -15409,9 +15491,10 @@ async function runInvestigate(objective, cwd, options = {}) {
   const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
   progress3(`Auth type: ${auth.type}`);
   progress3(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
+  if (scopePath) progress3(`Scope: ${effectiveCwd}`);
   progress3(`Objective: ${objective}`);
   console.error("");
-  const config = createInvestigatorConfig(objective, cwd, useCodeAssist);
+  const config = createInvestigatorConfig(objective, effectiveCwd, useCodeAssist);
   const result = await runAgentLoop(client, config);
   const rendered = renderInvestigationReport(result.result);
   console.log(rendered);
@@ -15434,139 +15517,199 @@ function progress3(message) {
 // src/commands/analyze.ts
 var import_node_fs6 = require("node:fs");
 var import_node_path7 = require("node:path");
-var PRUNE_DIRS3 = /* @__PURE__ */ new Set([
-  "node_modules",
-  "dist",
-  "build",
-  ".git",
-  ".next",
-  ".nuxt",
-  "coverage",
-  ".cache",
-  "__pycache__",
-  "venv",
-  ".venv",
-  "vendor",
-  "target",
-  "out",
-  ".turbo",
-  ".yarn"
-]);
-var METADATA_PROBES = [
-  { file: "package.json", lang: "TypeScript/JavaScript" },
-  { file: "go.mod", lang: "Go" },
-  { file: "pyproject.toml", lang: "Python" },
-  { file: "requirements.txt", lang: "Python" },
-  { file: "Cargo.toml", lang: "Rust" },
-  { file: "pom.xml", lang: "Java" },
-  { file: "build.gradle", lang: "Java/Kotlin" },
-  { file: "build.gradle.kts", lang: "Kotlin" },
-  { file: "CMakeLists.txt", lang: "C/C++" },
-  { file: "Gemfile", lang: "Ruby" },
-  { file: "composer.json", lang: "PHP" }
-];
-var COMMON_ENTRIES = [
-  "src/index.ts",
-  "src/index.js",
-  "src/main.ts",
-  "src/main.js",
-  "index.ts",
-  "index.js",
-  "main.go",
-  "main.py",
-  "app.py",
-  "lib/index.js"
-];
-function discover(startPath) {
-  const rootPath = (0, import_node_path7.resolve)(startPath);
-  let primaryLanguage = "Unknown";
-  let projectName = "unknown-project";
-  let description;
-  const entryPoints = [];
-  for (const { file, lang } of METADATA_PROBES) {
-    const filePath = (0, import_node_path7.join)(rootPath, file);
-    if (!(0, import_node_fs6.existsSync)(filePath)) continue;
-    primaryLanguage = lang;
-    if (file === "package.json") {
-      try {
-        const pkg = JSON.parse((0, import_node_fs6.readFileSync)(filePath, "utf-8"));
-        if (pkg.name) projectName = pkg.name;
-        if (pkg.description) description = pkg.description;
-        if (pkg.main) entryPoints.push(pkg.main);
-        if (pkg.bin && typeof pkg.bin === "object") {
-          for (const bin of Object.values(pkg.bin)) entryPoints.push(bin);
+
+// src/agents/codebase-analyzer.ts
+var CODE_ASSIST_MODEL2 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL3 = "gemini-2.5-flash";
+var DEFAULT_THINKING_BUDGET2 = 8192;
+function getGenerationConfig2(useCodeAssist) {
+  return {
+    temperature: 0.1,
+    topP: 0.95,
+    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET2 }
+  };
+}
+var outputSchema2 = {
+  type: "object",
+  properties: {
+    ProjectSummary: {
+      type: "string",
+      description: "A concise overview of the project: what it is, what problem it solves, and its core design philosophy."
+    },
+    TechStack: {
+      type: "object",
+      description: "Primary language, framework, and key external dependencies.",
+      properties: {
+        language: { type: "string" },
+        framework: { type: "string" },
+        keyDependencies: {
+          type: "array",
+          description: "Important external dependencies and their purpose.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              purpose: { type: "string" }
+            },
+            required: ["name", "purpose"]
+          }
         }
-      } catch {
+      },
+      required: ["language"]
+    },
+    ModuleMap: {
+      type: "array",
+      description: "Top-level modules/directories and their responsibilities.",
+      items: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Directory or file path." },
+          role: { type: "string", description: "What this module is responsible for." },
+          keyFiles: {
+            type: "array",
+            description: "The most important files within this module.",
+            items: { type: "string" }
+          },
+          keyExports: {
+            type: "array",
+            description: "Key exported symbols (functions, classes, types).",
+            items: { type: "string" }
+          }
+        },
+        required: ["path", "role"]
       }
+    },
+    Conventions: {
+      type: "array",
+      description: "Detected coding patterns and conventions used in the project.",
+      items: {
+        type: "object",
+        properties: {
+          pattern: { type: "string", description: 'Name of the pattern (e.g., "Repository Pattern", "Functional Options").' },
+          description: { type: "string", description: "How this pattern is used in the project." },
+          examples: {
+            type: "array",
+            description: "File paths where this pattern is demonstrated.",
+            items: { type: "string" }
+          }
+        },
+        required: ["pattern", "description"]
+      }
+    },
+    EntryPoints: {
+      type: "array",
+      description: "Where execution begins: main functions, CLI commands, API routes, exported library interfaces.",
+      items: {
+        type: "object",
+        properties: {
+          path: { type: "string" },
+          description: { type: "string" }
+        },
+        required: ["path", "description"]
+      }
+    },
+    ArchitectureNotes: {
+      type: "string",
+      description: "Free-form notes on architectural decisions, trade-offs, potential gotchas, and anything a developer should know before making changes."
     }
-    if (file === "go.mod") {
-      const content = (0, import_node_fs6.readFileSync)(filePath, "utf-8");
-      const match = /^module\s+(.+)$/m.exec(content);
-      if (match?.[1]) projectName = match[1].split("/").pop() ?? projectName;
-    }
-    if (file === "Cargo.toml") {
-      const content = (0, import_node_fs6.readFileSync)(filePath, "utf-8");
-      const match = /^name\s*=\s*"(.+)"/m.exec(content);
-      if (match?.[1]) projectName = match[1];
-    }
-    break;
-  }
-  for (const readme of ["README.md", "README.rst", "README.txt", "README"]) {
-    if ((0, import_node_fs6.existsSync)((0, import_node_path7.join)(rootPath, readme))) {
-      entryPoints.unshift(readme);
-      break;
-    }
-  }
-  for (const entry of COMMON_ENTRIES) {
-    if ((0, import_node_fs6.existsSync)((0, import_node_path7.join)(rootPath, entry)) && !entryPoints.includes(entry)) {
-      entryPoints.push(entry);
-    }
-  }
-  const topLevelDirs = getTopLevelDirs(rootPath);
-  return { rootPath, primaryLanguage, entryPoints, projectName, description, topLevelDirs };
+  },
+  required: ["ProjectSummary", "ModuleMap", "Conventions", "EntryPoints"]
+};
+var SYSTEM_PROMPT2 = `You are **Codebase Analyzer**, a specialized AI agent that produces comprehensive project context documents.
+
+Your **SOLE PURPOSE** is to explore a codebase broadly and produce a structured overview that another AI assistant (or a developer) can use to immediately understand the project without having to explore it themselves.
+
+## What you must produce
+Your output will be used as a **context document** \u2014 a reference that gets loaded at the start of every development session. It must be:
+- **Accurate**: Every file path, symbol name, and relationship must be verified by reading actual source code.
+- **Complete**: Cover all top-level modules, not just the ones that seem most interesting.
+- **Concise**: Focus on what matters for understanding the architecture, not implementation details.
+- **Actionable**: A developer reading this should know where to look for any given concern.
+
+## Investigation strategy
+1. **Start broad**: List the root directory to understand the top-level structure.
+2. **Identify the tech stack**: Read package.json/go.mod/Cargo.toml/pyproject.toml to understand dependencies.
+3. **Read the README**: If present, this provides the author's intent.
+4. **Map each module**: For each top-level directory, understand its purpose by reading key files.
+5. **Detect conventions**: Look for recurring patterns (error handling, dependency injection, middleware, etc.).
+6. **Identify entry points**: Find main functions, exported interfaces, route definitions, CLI commands.
+7. **Note architecture decisions**: Document trade-offs, unusual patterns, or things that might surprise a newcomer.
+
+## Rules
+- **DO** read actual source files to verify your claims. Do not guess based on file names alone.
+- **DO** cover the entire project, not just the most complex parts.
+- **DO** note both the patterns used AND where they are used (with file paths).
+- **DO NOT** write implementation code.
+- **DO NOT** go deeper than necessary \u2014 you are mapping, not debugging.
+- **DO NOT** spend more than 1-2 turns on any single module.
+
+## Termination
+When you have covered all top-level modules and have a clear picture of the project, call \`complete_task\` with your findings.
+`;
+function buildQuery2(cwd, focus) {
+  const focusClause = focus ? `
+Pay special attention to the \`${focus}\` area of the codebase.` : "";
+  return `Analyze the codebase at ${cwd} and produce a comprehensive project context document.${focusClause}
+
+Start by listing the root directory, then systematically explore each module.`;
 }
-function getTopLevelDirs(rootPath) {
+function createAnalyzerConfig(cwd, useCodeAssist, focus) {
+  return {
+    model: useCodeAssist ? CODE_ASSIST_MODEL2 : STANDARD_FALLBACK_MODEL3,
+    fallbackModel: STANDARD_FALLBACK_MODEL3,
+    systemPrompt: SYSTEM_PROMPT2,
+    query: buildQuery2(cwd, focus),
+    tools: getToolDeclarations(),
+    generationConfig: getGenerationConfig2(useCodeAssist),
+    maxTurns: 15,
+    maxTimeMs: 5 * 60 * 1e3,
+    // 5 minutes (broader exploration)
+    outputSchema: {
+      outputName: "report",
+      description: "The project context document as a JSON object.",
+      schema: outputSchema2
+    },
+    cwd
+  };
+}
+
+// src/commands/analyze.ts
+async function runAnalyze(options = {}) {
+  const cwd = (0, import_node_path7.resolve)(options.path ?? process.cwd());
+  const { focus, writePath, forceStandard = false } = options;
+  let auth;
   try {
-    return (0, import_node_fs6.readdirSync)(rootPath).filter((name) => {
-      if (PRUNE_DIRS3.has(name) || name.startsWith(".")) return false;
-      try {
-        return (0, import_node_fs6.statSync)((0, import_node_path7.join)(rootPath, name)).isDirectory();
-      } catch {
-        return false;
-      }
-    }).sort();
-  } catch {
-    return [];
+    auth = await createAuth();
+  } catch (err) {
+    console.error(`Authentication failed: ${err.message}`);
+    console.error("Run `gemini auth login` or set GEMINI_API_KEY to continue.");
+    process.exit(1);
+  }
+  const client = new GeminiClient(auth, forceStandard);
+  const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
+  progress4(`Auth type: ${auth.type}`);
+  progress4(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
+  progress4(`Project: ${cwd}`);
+  if (focus) progress4(`Focus: ${focus}`);
+  console.error("");
+  const config = createAnalyzerConfig(cwd, useCodeAssist, focus);
+  const result = await runAgentLoop(client, config);
+  const rendered = renderAnalysisReport(result.result);
+  console.log(rendered);
+  if (writePath) {
+    const outPath = (0, import_node_path7.resolve)(cwd, writePath);
+    (0, import_node_fs6.mkdirSync)((0, import_node_path7.dirname)(outPath), { recursive: true });
+    (0, import_node_fs6.writeFileSync)(outPath, rendered, "utf-8");
+    progress4(`Context document saved to: ${outPath}`);
+  }
+  if (result.terminateReason !== "GOAL") {
+    console.error(`
+[gemini] Analysis ended with reason: ${result.terminateReason}`);
   }
 }
-async function runAnalyze(options) {
-  const projectPath = (0, import_node_path7.resolve)(options.path ?? process.cwd());
-  const metadata = discover(projectPath);
-  console.log(`## Project Analysis: ${metadata.projectName}
-
-**Path:** ${metadata.rootPath}
-**Language:** ${metadata.primaryLanguage}
-${metadata.description ? `**Description:** ${metadata.description}
-` : ""}
-### Entry Points
-${metadata.entryPoints.length > 0 ? metadata.entryPoints.map((e) => `- ${e}`).join("\n") : "(none detected)"}
-
-### Top-Level Directories
-${metadata.topLevelDirs.length > 0 ? metadata.topLevelDirs.map((d) => `- ${d}/`).join("\n") : "(none)"}
-`);
-  if (options.focus) {
-    const focusPath = (0, import_node_path7.resolve)(projectPath, options.focus);
-    if ((0, import_node_fs6.existsSync)(focusPath)) {
-      const focusDirs = getTopLevelDirs(focusPath);
-      console.log(`### Focus: ${options.focus}
-${focusDirs.length > 0 ? focusDirs.map((d) => `- ${d}/`).join("\n") : "(no subdirectories)"}
-`);
-    } else {
-      console.log(`### Focus: ${options.focus}
-(path not found)
-`);
-    }
-  }
+function progress4(message) {
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  console.error(`[${time}] ${message}`);
 }
 
 // src/gemini-companion.ts
@@ -15575,13 +15718,13 @@ function printUsage() {
     [
       "Usage:",
       "  gemini-companion setup [--check] [--json]",
-      '  gemini-companion investigate "<objective>" [--write <path>] [--standard]',
-      "  gemini-companion analyze [--path <dir>] [--focus <path>]",
+      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
+      "  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]",
       "",
       "Commands:",
       "  setup        Check authentication status and plugin readiness",
       "  investigate   Run a deep Gemini-powered codebase investigation",
-      "  analyze      Quick project structure scan (no AI calls)"
+      "  analyze      Produce a project context document using Gemini"
     ].join("\n")
   );
 }
@@ -15618,6 +15761,7 @@ async function main() {
     case "investigate": {
       const objective = args.join(" ") || String(flags["objective"] ?? "");
       await runInvestigate(objective, import_node_process.default.cwd(), {
+        path: typeof flags["path"] === "string" ? flags["path"] : void 0,
         forceStandard: flags["standard"] === true,
         writePath: typeof flags["write"] === "string" ? flags["write"] : void 0
       });
@@ -15626,7 +15770,9 @@ async function main() {
     case "analyze":
       await runAnalyze({
         path: typeof flags["path"] === "string" ? flags["path"] : void 0,
-        focus: typeof flags["focus"] === "string" ? flags["focus"] : void 0
+        focus: typeof flags["focus"] === "string" ? flags["focus"] : void 0,
+        writePath: typeof flags["write"] === "string" ? flags["write"] : void 0,
+        forceStandard: flags["standard"] === true
       });
       break;
     case "help":

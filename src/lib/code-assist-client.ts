@@ -6,6 +6,8 @@
  * models that are not available on the standard generativelanguage API.
  */
 
+import { randomUUID } from 'node:crypto';
+import * as os from 'node:os';
 import type { OAuth2Client } from 'google-auth-library';
 import { parseSSEStream } from './sse-parser.js';
 import type {
@@ -22,6 +24,8 @@ const CODE_ASSIST_ENDPOINT =
 const CODE_ASSIST_API_VERSION =
   process.env['CODE_ASSIST_API_VERSION'] ?? 'v1internal';
 
+const PLUGIN_VERSION = '0.1.0';
+
 function getBaseUrl(): string {
   return `${CODE_ASSIST_ENDPOINT}/${CODE_ASSIST_API_VERSION}`;
 }
@@ -30,10 +34,16 @@ function getMethodUrl(method: string): string {
   return `${getBaseUrl()}:${method}`;
 }
 
+function buildUserAgent(): string {
+  return `GeminiPlugin-ClaudeCode/${PLUGIN_VERSION} (${os.platform()}; ${os.arch()})`;
+}
+
 // ─── Request / Response Converters ───────────────────────────────────────────
 
-function toVertexRequest(params: GenerateContentParams): VertexGenerateContentRequest {
-  // Code Assist API expects systemInstruction without role, or role 'user'
+function toVertexRequest(
+  params: GenerateContentParams,
+  sessionId: string,
+): VertexGenerateContentRequest {
   const systemInstruction = params.systemInstruction
     ? { role: 'user' as const, parts: params.systemInstruction.parts }
     : undefined;
@@ -44,20 +54,21 @@ function toVertexRequest(params: GenerateContentParams): VertexGenerateContentRe
     tools: params.tools,
     toolConfig: params.toolConfig,
     generationConfig: params.generationConfig,
+    session_id: sessionId,
   };
 }
 
 function toCARequest(
   params: GenerateContentParams,
+  sessionId: string,
   project?: string,
   enableCredits?: boolean,
 ): CAGenerateContentRequest {
   return {
     model: params.model,
     project,
-    user_prompt_id: crypto.randomUUID(),
-    request: toVertexRequest(params),
-    // Enable paid credits (Google One AI) if user has a paid tier
+    user_prompt_id: randomUUID(),
+    request: toVertexRequest(params, sessionId),
     enabled_credit_types: enableCredits ? ['GOOGLE_ONE_AI'] : undefined,
   };
 }
@@ -115,7 +126,23 @@ export class CodeAssistClient implements GeminiClientInterface {
   private initialized = false;
   private hasPaidTier = false;
 
-  constructor(private readonly oauthClient: OAuth2Client) {}
+  /** Stable session ID for the entire CLI invocation (matches Gemini CLI behavior). */
+  private readonly sessionId: string;
+
+  /** User-Agent header sent with every request. */
+  private readonly userAgent: string;
+
+  constructor(private readonly oauthClient: OAuth2Client) {
+    this.sessionId = randomUUID();
+    this.userAgent = buildUserAgent();
+  }
+
+  private get headers(): Record<string, string> {
+    return {
+      'Content-Type': 'application/json',
+      'User-Agent': this.userAgent,
+    };
+  }
 
   /**
    * Initialize the client by calling loadCodeAssist to get the project ID.
@@ -149,7 +176,7 @@ export class CodeAssistClient implements GeminiClientInterface {
       if (loadRes.currentTier) {
         this.initialized = true;
         if (process.env['DEBUG']) {
-          console.error(`[CodeAssist] Initialized. Project: ${this.projectId}, Tier: ${loadRes.paidTier?.id ?? loadRes.currentTier.id ?? 'unknown'}, PaidCredits: ${this.hasPaidTier}`);
+          console.error(`[CodeAssist] Initialized. Project: ${this.projectId}, Tier: ${loadRes.paidTier?.id ?? loadRes.currentTier.id ?? 'unknown'}, PaidCredits: ${this.hasPaidTier}, SessionId: ${this.sessionId}`);
         }
         return;
       }
@@ -182,10 +209,9 @@ export class CodeAssistClient implements GeminiClientInterface {
 
       this.initialized = true;
       if (process.env['DEBUG']) {
-        console.error(`[CodeAssist] Onboarded. Project: ${this.projectId}`);
+        console.error(`[CodeAssist] Onboarded. Project: ${this.projectId}, SessionId: ${this.sessionId}`);
       }
     } catch (err) {
-      // If setup fails, mark as initialized anyway — generateContent will fail with a clearer error
       this.initialized = true;
       if (process.env['DEBUG']) {
         console.error(`[CodeAssist] Init failed: ${(err as Error).message}`);
@@ -195,11 +221,11 @@ export class CodeAssistClient implements GeminiClientInterface {
 
   async generateContent(params: GenerateContentParams): Promise<GenerateContentResponse> {
     await this.init();
-    const body = toCARequest(params, this.projectId, this.hasPaidTier);
+    const body = toCARequest(params, this.sessionId, this.projectId, this.hasPaidTier);
     const res = await this.oauthClient.request<CaGenerateContentResponse>({
       url: getMethodUrl('generateContent'),
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: 'json',
       retryConfig: {
@@ -214,16 +240,15 @@ export class CodeAssistClient implements GeminiClientInterface {
 
   async *generateContentStream(params: GenerateContentParams): AsyncGenerator<GenerateContentResponse> {
     await this.init();
-    const body = toCARequest(params, this.projectId, this.hasPaidTier);
+    const body = toCARequest(params, this.sessionId, this.projectId, this.hasPaidTier);
     if (process.env['DEBUG']) {
-      console.error('[CodeAssist] Request URL:', getMethodUrl('streamGenerateContent'));
-      console.error('[CodeAssist] Model:', body.model, '| Project:', body.project);
+      console.error('[CodeAssist] Model:', body.model, '| Project:', body.project, '| Session:', this.sessionId);
     }
     const res = await this.oauthClient.request<AsyncIterable<unknown>>({
       url: getMethodUrl('streamGenerateContent'),
       method: 'POST',
       params: { alt: 'sse' },
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: 'stream' as 'json',
       retry: false,
@@ -240,7 +265,7 @@ export class CodeAssistClient implements GeminiClientInterface {
     const res = await this.oauthClient.request<T>({
       url: getMethodUrl(method),
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers,
       body: JSON.stringify(body),
       responseType: 'json',
       retryConfig: {
@@ -257,7 +282,7 @@ export class CodeAssistClient implements GeminiClientInterface {
     const res = await this.oauthClient.request<T>({
       url: `${getBaseUrl()}/${name}`,
       method: 'GET',
-      headers: { 'Content-Type': 'application/json' },
+      headers: this.headers,
       responseType: 'json',
     });
     return res.data;

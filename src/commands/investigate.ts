@@ -11,12 +11,14 @@ import { runAgentLoop } from '../agents/agent-loop.js';
 import { renderInvestigationReport } from '../lib/render.js';
 
 export interface InvestigateOptions {
+  path?: string;
   forceStandard?: boolean;
   writePath?: string;
 }
 
 export async function runInvestigate(objective: string, cwd: string, options: InvestigateOptions = {}): Promise<void> {
-  const { forceStandard = false, writePath } = options;
+  const { path: scopePath, forceStandard = false, writePath } = options;
+  const effectiveCwd = scopePath ? resolve(cwd, scopePath) : cwd;
   if (!objective.trim()) {
     console.error('Error: Please provide an investigation objective.');
     process.exit(1);
@@ -37,10 +39,11 @@ export async function runInvestigate(objective: string, cwd: string, options: In
 
   progress(`Auth type: ${auth.type}`);
   progress(`API: ${useCodeAssist ? 'Code Assist (gemini-3)' : 'Standard (gemini-2.5)'}`);
+  if (scopePath) progress(`Scope: ${effectiveCwd}`);
   progress(`Objective: ${objective}`);
   console.error('');
 
-  const config = createInvestigatorConfig(objective, cwd, useCodeAssist);
+  const config = createInvestigatorConfig(objective, effectiveCwd, useCodeAssist);
 
   const result = await runAgentLoop(client, config);
 

@@ -59,3 +59,121 @@ export function renderInvestigationReport(raw: string): string {
 
   return sections.join('\n\n');
 }
+
+// ─── Analysis Report ─────────────────────────────────────────────────────────
+
+interface Dependency {
+  name?: string;
+  purpose?: string;
+}
+
+interface ModuleEntry {
+  path?: string;
+  role?: string;
+  keyFiles?: string[];
+  keyExports?: string[];
+}
+
+interface Convention {
+  pattern?: string;
+  description?: string;
+  examples?: string[];
+}
+
+interface EntryPoint {
+  path?: string;
+  description?: string;
+}
+
+interface AnalysisReport {
+  ProjectSummary?: string;
+  TechStack?: {
+    language?: string;
+    framework?: string;
+    keyDependencies?: Dependency[];
+  };
+  ModuleMap?: ModuleEntry[];
+  Conventions?: Convention[];
+  EntryPoints?: EntryPoint[];
+  ArchitectureNotes?: string;
+}
+
+/**
+ * Renders an analysis report JSON into a Markdown context document.
+ * Falls back to the raw string if parsing fails.
+ */
+export function renderAnalysisReport(raw: string): string {
+  let report: AnalysisReport;
+  try {
+    report = JSON.parse(raw) as AnalysisReport;
+  } catch {
+    return raw;
+  }
+
+  const sections: string[] = [];
+
+  sections.push('# Project Context');
+
+  if (report.ProjectSummary) {
+    sections.push('## Overview');
+    sections.push(report.ProjectSummary);
+  }
+
+  if (report.TechStack) {
+    const ts = report.TechStack;
+    const parts: string[] = [];
+    if (ts.language) parts.push(`**Language:** ${ts.language}`);
+    if (ts.framework) parts.push(`**Framework:** ${ts.framework}`);
+    if (parts.length > 0) {
+      sections.push('## Tech Stack');
+      sections.push(parts.join('\n'));
+    }
+    if (ts.keyDependencies && ts.keyDependencies.length > 0) {
+      const deps = ts.keyDependencies
+        .map(d => `- **${d.name ?? '?'}** — ${d.purpose ?? ''}`)
+        .join('\n');
+      sections.push('### Key Dependencies');
+      sections.push(deps);
+    }
+  }
+
+  if (report.ModuleMap && report.ModuleMap.length > 0) {
+    sections.push('## Module Map');
+    for (const mod of report.ModuleMap) {
+      sections.push(`### \`${mod.path ?? 'unknown'}\``);
+      if (mod.role) sections.push(mod.role);
+      if (mod.keyFiles?.length) {
+        sections.push('**Key files:** ' + mod.keyFiles.map(f => `\`${f}\``).join(', '));
+      }
+      if (mod.keyExports?.length) {
+        sections.push('**Key exports:** ' + mod.keyExports.map(s => `\`${s}\``).join(', '));
+      }
+    }
+  }
+
+  if (report.Conventions && report.Conventions.length > 0) {
+    sections.push('## Conventions & Patterns');
+    for (const conv of report.Conventions) {
+      sections.push(`### ${conv.pattern ?? 'Unknown Pattern'}`);
+      if (conv.description) sections.push(conv.description);
+      if (conv.examples?.length) {
+        sections.push('**Examples:** ' + conv.examples.map(e => `\`${e}\``).join(', '));
+      }
+    }
+  }
+
+  if (report.EntryPoints && report.EntryPoints.length > 0) {
+    sections.push('## Entry Points');
+    const entries = report.EntryPoints
+      .map(e => `- \`${e.path ?? '?'}\` — ${e.description ?? ''}`)
+      .join('\n');
+    sections.push(entries);
+  }
+
+  if (report.ArchitectureNotes) {
+    sections.push('## Architecture Notes');
+    sections.push(report.ArchitectureNotes);
+  }
+
+  return sections.join('\n\n');
+}

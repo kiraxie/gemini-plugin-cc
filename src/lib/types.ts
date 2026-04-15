@@ -34,6 +34,7 @@ export interface VertexGenerateContentRequest {
   tools?: Tool[];
   toolConfig?: ToolConfig;
   generationConfig?: VertexGenerationConfig;
+  session_id?: string;
 }
 
 export interface VertexGenerationConfig {

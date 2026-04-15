@@ -19,13 +19,13 @@ function printUsage(): void {
     [
       'Usage:',
       '  gemini-companion setup [--check] [--json]',
-      '  gemini-companion investigate "<objective>" [--write <path>] [--standard]',
-      '  gemini-companion analyze [--path <dir>] [--focus <path>]',
+      '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
+      '  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]',
       '',
       'Commands:',
       '  setup        Check authentication status and plugin readiness',
       '  investigate   Run a deep Gemini-powered codebase investigation',
-      '  analyze      Quick project structure scan (no AI calls)',
+      '  analyze      Produce a project context document using Gemini',
     ].join('\n'),
   );
 }
@@ -68,6 +68,7 @@ async function main(): Promise<void> {
     case 'investigate': {
       const objective = args.join(' ') || String(flags['objective'] ?? '');
       await runInvestigate(objective, process.cwd(), {
+        path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
         forceStandard: flags['standard'] === true,
         writePath: typeof flags['write'] === 'string' ? flags['write'] : undefined,
       });
@@ -78,6 +79,8 @@ async function main(): Promise<void> {
       await runAnalyze({
         path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
         focus: typeof flags['focus'] === 'string' ? flags['focus'] : undefined,
+        writePath: typeof flags['write'] === 'string' ? flags['write'] : undefined,
+        forceStandard: flags['standard'] === true,
       });
       break;
 

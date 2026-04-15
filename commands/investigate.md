@@ -8,7 +8,9 @@ Run a codebase investigation using Gemini. Execute:
 node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" investigate $ARGUMENTS
 ```
 
-Supports `--write <path>` to save the report to a file (path relative to project root).
+Supports:
+- `--path <dir>` to scope the investigation to a specific directory
+- `--write <path>` to save the report to a file (path relative to project root)
 
 Return the output verbatim. The investigation report contains:
 - **SummaryOfFindings**: Conclusions and actionable insights
