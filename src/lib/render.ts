@@ -23,7 +23,8 @@ interface InvestigationReport {
 export function renderInvestigationReport(raw: string): string {
   let report: InvestigationReport;
   try {
-    report = JSON.parse(raw) as InvestigationReport;
+    const cleaned = raw.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+    report = JSON.parse(cleaned) as InvestigationReport;
   } catch {
     // Not valid JSON — return as-is (model may have returned plain text)
     return raw;
@@ -80,7 +81,8 @@ interface OpinionReport {
 export function renderOpinionReport(raw: string): string {
   let report: OpinionReport;
   try {
-    report = JSON.parse(raw) as OpinionReport;
+    const cleaned = raw.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+    report = JSON.parse(cleaned) as OpinionReport;
   } catch {
     return raw;
   }
@@ -159,7 +161,9 @@ interface AnalysisReport {
 export function renderAnalysisReport(raw: string): string {
   let report: AnalysisReport;
   try {
-    report = JSON.parse(raw) as AnalysisReport;
+    // Strip markdown code fences if present
+    const cleaned = raw.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
+    report = JSON.parse(cleaned) as AnalysisReport;
   } catch {
     return raw;
   }

@@ -232,7 +232,8 @@ export class CodeAssistClient implements GeminiClientInterface {
         retryDelay: 100,
         retry: 3,
         noResponseRetries: 3,
-        statusCodesToRetry: [[429, 429], [499, 499], [500, 599]],
+        statusCodesToRetry: [[499, 499], [500, 599]],
+        // Note: 429 (rate limit) is NOT retried here — callers handle it
       },
     });
     return fromCAResponse(res.data);
@@ -272,7 +273,8 @@ export class CodeAssistClient implements GeminiClientInterface {
         retryDelay: 100,
         retry: 3,
         noResponseRetries: 3,
-        statusCodesToRetry: [[429, 429], [499, 499], [500, 599]],
+        statusCodesToRetry: [[499, 499], [500, 599]],
+        // Note: 429 (rate limit) is NOT retried here — callers handle it
       },
     });
     return res.data;

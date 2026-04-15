@@ -17,7 +17,7 @@ import type {
 import { parseSSEStream } from './sse-parser.js';
 
 /** Default fallback model when Code Assist API is unavailable. */
-export const STANDARD_FALLBACK_MODEL = 'gemini-2.5-flash';
+export const STANDARD_FALLBACK_MODEL = 'gemini-2.5-pro';
 
 const STANDARD_ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta';
 

@@ -2,7 +2,11 @@
  * Unified Gemini client with automatic fallback.
  *
  * Route B (Code Assist API, cloudcode-pa.googleapis.com) is the primary path.
- * After 3 consecutive failures, degrades to Route A (standard API).
+ * For non-OAuth users (API key only), falls back to Route A (standard API)
+ * after consecutive failures.
+ *
+ * For OAuth users, always stays on Code Assist API — the standard API
+ * does not accept OAuth scopes from `gemini auth login`.
  */
 
 import type {
@@ -21,17 +25,21 @@ export class GeminiClient implements GeminiClientInterface {
   private standardClient?: StandardClient;
   private consecutiveFailures = 0;
   private degraded = false;
+  private readonly isOAuthUser: boolean;
 
   constructor(private readonly auth: AuthResult, forceStandard = false) {
-    // Code Assist requires an OAuth2Client
+    this.isOAuthUser = auth.type === 'oauth' || auth.type === 'adc';
+
     if (auth.oauthClient && !forceStandard) {
       this.codeAssistClient = new CodeAssistClient(auth.oauthClient);
     }
     if (forceStandard) {
       this.degraded = true;
     }
-    // Standard client works with any auth type
-    this.standardClient = new StandardClient(auth);
+    // Standard client only useful for API key users
+    if (!this.isOAuthUser) {
+      this.standardClient = new StandardClient(auth);
+    }
   }
 
   get isDegraded(): boolean {
@@ -39,12 +47,17 @@ export class GeminiClient implements GeminiClientInterface {
   }
 
   async generateContent(params: GenerateContentParams): Promise<GenerateContentResponse> {
-    if (!this.degraded && this.codeAssistClient) {
+    if (this.codeAssistClient && !this.degraded) {
       try {
         const result = await this.codeAssistClient.generateContent(params);
         this.consecutiveFailures = 0;
         return result;
       } catch (err) {
+        // For OAuth users: re-throw (let caller handle rate limits/errors)
+        // Only degrade to standard API for API key users
+        if (this.isOAuthUser) {
+          throw err;
+        }
         this.consecutiveFailures++;
         if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           this.degraded = true;
@@ -55,15 +68,18 @@ export class GeminiClient implements GeminiClientInterface {
       }
     }
 
-    // Fallback to standard client
+    if (!this.standardClient) {
+      throw new Error('No available API client. Code Assist API failed and standard API is not available for OAuth users.');
+    }
+
     const fallbackParams = this.degraded
       ? { ...params, model: STANDARD_FALLBACK_MODEL }
       : params;
-    return this.standardClient!.generateContent(fallbackParams);
+    return this.standardClient.generateContent(fallbackParams);
   }
 
   async *generateContentStream(params: GenerateContentParams): AsyncGenerator<GenerateContentResponse> {
-    if (!this.degraded && this.codeAssistClient) {
+    if (this.codeAssistClient && !this.degraded) {
       try {
         const stream = this.codeAssistClient.generateContentStream(params);
         let firstChunkReceived = false;
@@ -76,6 +92,9 @@ export class GeminiClient implements GeminiClientInterface {
         }
         return;
       } catch (err) {
+        if (this.isOAuthUser) {
+          throw err;
+        }
         this.consecutiveFailures++;
         if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           this.degraded = true;
@@ -86,11 +105,14 @@ export class GeminiClient implements GeminiClientInterface {
       }
     }
 
-    // Fallback to standard client
+    if (!this.standardClient) {
+      throw new Error('No available API client. Code Assist API failed and standard API is not available for OAuth users.');
+    }
+
     const fallbackParams = this.degraded
       ? { ...params, model: STANDARD_FALLBACK_MODEL }
       : params;
-    yield* this.standardClient!.generateContentStream(fallbackParams);
+    yield* this.standardClient.generateContentStream(fallbackParams);
   }
 }
 

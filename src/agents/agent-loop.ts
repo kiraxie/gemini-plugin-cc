@@ -3,6 +3,11 @@
  *
  * Runs a multi-turn conversation with Gemini, executing tool calls until
  * the model calls `complete_task` or a termination condition is met.
+ *
+ * Model strategy (matching official Gemini CLI):
+ * - Start with config.model (gemini-3-flash-preview)
+ * - If rate limited on first turn → restart entirely with config.fallbackModel (gemini-2.5-pro)
+ * - Never switch models mid-investigation (keeps report quality consistent)
  */
 
 import type {
@@ -16,8 +21,6 @@ import type {
 } from '../lib/types.js';
 import { executeTool } from '../tools/registry.js';
 import { COMPLETE_TASK_TOOL_NAME, buildCompleteTaskDeclaration } from './complete-task.js';
-
-const GRACE_PERIOD_MS = 60_000;
 
 const TIMEOUT_WARNING =
   'You have exceeded the time limit. You have one final chance to call the `complete_task` tool ' +
@@ -36,6 +39,11 @@ const NO_TOOL_CALL_WARNING =
 function progress(message: string): void {
   const time = new Date().toLocaleTimeString('en-US', { hour12: false });
   console.error(`[${time}] ${message}`);
+}
+
+function isRateLimitError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED');
 }
 
 function extractFunctionCalls(parts: Part[]): Array<{ call: FunctionCall; id: string }> {
@@ -61,7 +69,6 @@ async function collectStreamResponse(
     for (const candidate of chunk.candidates ?? []) {
       if (candidate.content?.parts) {
         for (const part of candidate.content.parts) {
-          // Merge text parts (streaming sends incremental text)
           if (part.text !== undefined && !part.thought) {
             const lastPart = allParts[allParts.length - 1];
             if (lastPart && lastPart.text !== undefined && !lastPart.thought && !lastPart.functionCall && !lastPart.functionResponse) {
@@ -77,53 +84,70 @@ async function collectStreamResponse(
   return allParts;
 }
 
-// ─── Main Loop ───────────────────────────────────────────────────────────────
+// ─── Model call ──────────────────────────────────────────────────────────────
 
-export async function runAgentLoop(
+function buildGenerationConfig(config: AgentConfig, model: string) {
+  // Use thinkingBudget for stable models, thinkingLevel for preview
+  if (model === config.model) {
+    return config.generationConfig;
+  }
+  // Fallback model uses thinkingBudget
+  return {
+    ...config.generationConfig,
+    thinkingConfig: {
+      includeThoughts: true,
+      thinkingBudget: 8192,
+    },
+  };
+}
+
+async function callModel(
   client: GeminiClientInterface,
   config: AgentConfig,
+  model: string,
+  history: Content[],
+  allTools: typeof config.tools,
+): Promise<Part[]> {
+  const stream = client.generateContentStream({
+    model,
+    contents: history,
+    systemInstruction: { role: 'system', parts: [{ text: config.systemPrompt }] },
+    tools: [{ functionDeclarations: allTools }],
+    generationConfig: buildGenerationConfig(config, model),
+  });
+  return await collectStreamResponse(stream);
+}
+
+// ─── Core Loop Implementation ────────────────────────────────────────────────
+
+async function executeLoop(
+  client: GeminiClientInterface,
+  config: AgentConfig,
+  model: string,
 ): Promise<AgentResult> {
   const history: Content[] = [];
   const completeTaskDecl = buildCompleteTaskDeclaration(config.outputSchema);
   const allTools = [...config.tools, completeTaskDecl];
 
-  // Initial user message
   history.push({ role: 'user', parts: [{ text: config.query }] });
 
   const startTime = Date.now();
   let turnCount = 0;
-  let rateLimitWaitMs = 0; // Exclude rate limit waits from timeout
 
   while (turnCount < config.maxTurns) {
-    // Check timeout (excluding time spent waiting for rate limits)
-    const effectiveElapsed = (Date.now() - startTime) - rateLimitWaitMs;
-    if (effectiveElapsed > config.maxTimeMs) {
+    if ((Date.now() - startTime) > config.maxTimeMs) {
       progress('Time limit exceeded. Attempting recovery turn...');
-      const recovery = await attemptRecoveryTurn(client, config, history, allTools, TIMEOUT_WARNING);
+      const recovery = await attemptRecoveryTurn(client, config, model, history, allTools, TIMEOUT_WARNING);
       if (recovery) return recovery;
       return { result: 'Investigation timed out before completion.', terminateReason: 'TIMEOUT' };
     }
 
     turnCount++;
-    progress(`Turn ${turnCount}/${config.maxTurns}...`);
+    progress(`Turn ${turnCount}/${config.maxTurns} [${model}]...`);
 
-    // Call the model with retry on rate limit (429)
-    let modelParts: Part[];
-    try {
-      const retryResult = await callModelWithRetry(client, config, history, allTools);
-      modelParts = retryResult.parts;
-      rateLimitWaitMs += retryResult.rateLimitWaitMs;
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      if (errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED')) {
-        progress('Rate limit exceeded after retries. Ending investigation early.');
-        return { result: 'Investigation paused due to API rate limiting. Partial results may be available in the conversation history.', terminateReason: 'ERROR' };
-      }
-      throw err;
-    }
+    const modelParts = await callModel(client, config, model, history, allTools);
     history.push({ role: 'model', parts: modelParts });
 
-    // Extract function calls
     const functionCalls = extractFunctionCalls(modelParts);
 
     // Log thoughts
@@ -135,17 +159,15 @@ export async function runAgentLoop(
     }
 
     if (functionCalls.length === 0) {
-      // No tool calls — give the model one more chance
       progress('  No tool calls received. Nudging...');
       history.push({ role: 'user', parts: [{ text: NO_TOOL_CALL_WARNING }] });
       continue;
     }
 
-    // Process each function call
+    // Process function calls
     const responseParts: Part[] = [];
 
     for (const { call, id } of functionCalls) {
-      // Check for complete_task
       if (call.name === COMPLETE_TASK_TOOL_NAME) {
         const outputName = config.outputSchema?.outputName ?? 'result';
         const outputValue = call.args[outputName];
@@ -170,7 +192,6 @@ export async function runAgentLoop(
         return { result: resultStr, terminateReason: 'GOAL' };
       }
 
-      // Execute regular tool
       progress(`  [tool] ${call.name}(${summarizeArgs(call.args)})`);
       const toolResult = await executeTool(call.name, call.args, config.cwd);
       responseParts.push({
@@ -185,17 +206,41 @@ export async function runAgentLoop(
     history.push({ role: 'user', parts: responseParts });
   }
 
-  // Max turns exceeded — recovery turn
+  // Max turns exceeded
   progress('Max turns exceeded. Attempting recovery turn...');
-  const recovery = await attemptRecoveryTurn(client, config, history, allTools, MAX_TURNS_WARNING);
+  const recovery = await attemptRecoveryTurn(client, config, model, history, allTools, MAX_TURNS_WARNING);
   if (recovery) return recovery;
 
   return { result: 'Investigation reached maximum turns before completion.', terminateReason: 'MAX_TURNS' };
 }
 
+// ─── Public Entry Point ──────────────────────────────────────────────────────
+
+/**
+ * Run the agent loop. On rate limit during the first turn, automatically
+ * restarts the entire investigation with the fallback model.
+ */
+export async function runAgentLoop(
+  client: GeminiClientInterface,
+  config: AgentConfig,
+): Promise<AgentResult> {
+  try {
+    return await executeLoop(client, config, config.model);
+  } catch (err) {
+    if (isRateLimitError(err) && config.model !== config.fallbackModel) {
+      progress(`Rate limited on ${config.model}. Restarting with ${config.fallbackModel}...`);
+      return await executeLoop(client, config, config.fallbackModel);
+    }
+    throw err;
+  }
+}
+
+// ─── Recovery Turn ───────────────────────────────────────────────────────────
+
 async function attemptRecoveryTurn(
   client: GeminiClientInterface,
   config: AgentConfig,
+  model: string,
   history: Content[],
   allTools: typeof config.tools,
   warningMessage: string,
@@ -203,8 +248,7 @@ async function attemptRecoveryTurn(
   history.push({ role: 'user', parts: [{ text: warningMessage }] });
 
   try {
-    const retryResult = await callModelWithRetry(client, config, history, allTools);
-    const modelParts = retryResult.parts;
+    const modelParts = await callModel(client, config, model, history, allTools);
     const functionCalls = extractFunctionCalls(modelParts);
 
     for (const { call } of functionCalls) {
@@ -227,48 +271,7 @@ async function attemptRecoveryTurn(
   return null;
 }
 
-interface RetryResult {
-  parts: Part[];
-  rateLimitWaitMs: number;
-}
-
-async function callModelWithRetry(
-  client: GeminiClientInterface,
-  config: AgentConfig,
-  history: Content[],
-  allTools: typeof config.tools,
-  maxRetries = 3,
-): Promise<RetryResult> {
-  let totalWaitMs = 0;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const stream = client.generateContentStream({
-        model: config.model,
-        contents: history,
-        systemInstruction: { role: 'system', parts: [{ text: config.systemPrompt }] },
-        tools: [{ functionDeclarations: allTools }],
-        generationConfig: config.generationConfig,
-      });
-      return { parts: await collectStreamResponse(stream), rateLimitWaitMs: totalWaitMs };
-    } catch (err) {
-      const errMsg = (err as Error).message;
-      const isRateLimit = errMsg.includes('429') || errMsg.includes('RESOURCE_EXHAUSTED');
-
-      if (isRateLimit && attempt < maxRetries) {
-        // Extract wait time from error message if available
-        const waitMatch = /reset after (\d+)s/.exec(errMsg);
-        const waitSec = waitMatch ? parseInt(waitMatch[1], 10) + 2 : 30 * (attempt + 1);
-        progress(`Rate limited. Waiting ${waitSec}s before retry (${attempt + 1}/${maxRetries})...`);
-        const waitMs = waitSec * 1000;
-        totalWaitMs += waitMs;
-        await new Promise(r => setTimeout(r, waitMs));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error('Max retries exceeded');
-}
+// ─── Utils ───────────────────────────────────────────────────────────────────
 
 function summarizeArgs(args: Record<string, unknown>): string {
   const entries = Object.entries(args);

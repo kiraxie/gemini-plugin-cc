@@ -13,7 +13,7 @@ import { getToolDeclarations } from '../tools/registry.js';
 // ─── Model Configuration ─────────────────────────────────────────────────────
 
 const CODE_ASSIST_MODEL = 'gemini-3-flash-preview';
-const STANDARD_FALLBACK_MODEL = 'gemini-2.5-flash';
+const STANDARD_FALLBACK_MODEL = 'gemini-2.5-pro';
 const DEFAULT_THINKING_BUDGET = 8192;
 
 function getGenerationConfig(useCodeAssist: boolean): VertexGenerationConfig {

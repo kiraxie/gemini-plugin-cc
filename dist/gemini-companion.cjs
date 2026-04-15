@@ -14110,26 +14110,26 @@ __export(state_exports, {
   writeJobFile: () => writeJobFile
 });
 function resolveStateDir(cwd) {
-  const workspaceRoot = (0, import_node_path9.resolve)(cwd);
-  const slug = (0, import_node_path9.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
+  const workspaceRoot = (0, import_node_path10.resolve)(cwd);
+  const slug = (0, import_node_path10.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
   const hash = (0, import_node_crypto2.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
   const pluginDataDir = process.env[PLUGIN_DATA_ENV];
-  const stateRoot = pluginDataDir ? (0, import_node_path9.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
-  return (0, import_node_path9.join)(stateRoot, `${slug}-${hash}`);
+  const stateRoot = pluginDataDir ? (0, import_node_path10.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
+  return (0, import_node_path10.join)(stateRoot, `${slug}-${hash}`);
 }
 function ensureDir(dir) {
-  (0, import_node_fs7.mkdirSync)(dir, { recursive: true });
+  (0, import_node_fs8.mkdirSync)(dir, { recursive: true });
 }
 function stateFilePath(stateDir) {
-  return (0, import_node_path9.join)(stateDir, "state.json");
+  return (0, import_node_path10.join)(stateDir, "state.json");
 }
 function loadState(stateDir) {
   const filePath = stateFilePath(stateDir);
-  if (!(0, import_node_fs7.existsSync)(filePath)) {
+  if (!(0, import_node_fs8.existsSync)(filePath)) {
     return { version: 1, jobs: [] };
   }
   try {
-    return JSON.parse((0, import_node_fs7.readFileSync)(filePath, "utf-8"));
+    return JSON.parse((0, import_node_fs8.readFileSync)(filePath, "utf-8"));
   } catch {
     return { version: 1, jobs: [] };
   }
@@ -14139,27 +14139,27 @@ function saveState(stateDir, state) {
   if (state.jobs.length > MAX_JOBS) {
     state.jobs = state.jobs.slice(0, MAX_JOBS);
   }
-  (0, import_node_fs7.writeFileSync)(stateFilePath(stateDir), JSON.stringify(state, null, 2), "utf-8");
+  (0, import_node_fs8.writeFileSync)(stateFilePath(stateDir), JSON.stringify(state, null, 2), "utf-8");
 }
 function jobsDir(stateDir) {
-  return (0, import_node_path9.join)(stateDir, "jobs");
+  return (0, import_node_path10.join)(stateDir, "jobs");
 }
 function jobFilePath(stateDir, jobId) {
-  return (0, import_node_path9.join)(jobsDir(stateDir), `${jobId}.json`);
+  return (0, import_node_path10.join)(jobsDir(stateDir), `${jobId}.json`);
 }
 function jobLogPath(stateDir, jobId) {
-  return (0, import_node_path9.join)(jobsDir(stateDir), `${jobId}.log`);
+  return (0, import_node_path10.join)(jobsDir(stateDir), `${jobId}.log`);
 }
 function writeJobFile(stateDir, job) {
   const dir = jobsDir(stateDir);
   ensureDir(dir);
-  (0, import_node_fs7.writeFileSync)(jobFilePath(stateDir, job.id), JSON.stringify(job, null, 2), "utf-8");
+  (0, import_node_fs8.writeFileSync)(jobFilePath(stateDir, job.id), JSON.stringify(job, null, 2), "utf-8");
 }
 function readJobFile(stateDir, jobId) {
   const filePath = jobFilePath(stateDir, jobId);
-  if (!(0, import_node_fs7.existsSync)(filePath)) return null;
+  if (!(0, import_node_fs8.existsSync)(filePath)) return null;
   try {
-    return JSON.parse((0, import_node_fs7.readFileSync)(filePath, "utf-8"));
+    return JSON.parse((0, import_node_fs8.readFileSync)(filePath, "utf-8"));
   } catch {
     return null;
   }
@@ -14168,14 +14168,14 @@ function appendLog(stateDir, jobId, message) {
   const logFile = jobLogPath(stateDir, jobId);
   ensureDir(jobsDir(stateDir));
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
-  (0, import_node_fs7.writeFileSync)(logFile, `[${time}] ${message}
+  (0, import_node_fs8.writeFileSync)(logFile, `[${time}] ${message}
 `, { flag: "a" });
 }
 function readLogTail(stateDir, jobId, maxLines = 10) {
   const logFile = jobLogPath(stateDir, jobId);
-  if (!(0, import_node_fs7.existsSync)(logFile)) return [];
+  if (!(0, import_node_fs8.existsSync)(logFile)) return [];
   try {
-    const content = (0, import_node_fs7.readFileSync)(logFile, "utf-8");
+    const content = (0, import_node_fs8.readFileSync)(logFile, "utf-8");
     const lines = content.trim().split("\n");
     return lines.slice(-maxLines);
   } catch {
@@ -14215,18 +14215,18 @@ function listJobs(stateDir, sessionId) {
   }
   return state.jobs;
 }
-var import_node_crypto2, import_node_fs7, import_node_path9, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
+var import_node_crypto2, import_node_fs8, import_node_path10, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
 var init_state = __esm({
   "src/lib/state.ts"() {
     "use strict";
     import_node_crypto2 = require("node:crypto");
-    import_node_fs7 = require("node:fs");
-    import_node_path9 = require("node:path");
+    import_node_fs8 = require("node:fs");
+    import_node_path10 = require("node:path");
     import_node_os2 = require("node:os");
     MAX_JOBS = 50;
     PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
     SESSION_ID_ENV = "GEMINI_COMPANION_SESSION_ID";
-    FALLBACK_STATE_ROOT = (0, import_node_path9.join)((0, import_node_os2.tmpdir)(), "gemini-companion");
+    FALLBACK_STATE_ROOT = (0, import_node_path10.join)((0, import_node_os2.tmpdir)(), "gemini-companion");
   }
 });
 
@@ -14330,7 +14330,7 @@ ${msg}`);
     status: "ok",
     authType: auth.type,
     codeAssistAvailable: canUseCodeAssist,
-    models: canUseCodeAssist ? ["gemini-3-flash-preview", "gemini-2.5-flash", "gemini-2.5-pro"] : ["gemini-2.5-flash", "gemini-2.5-pro"]
+    models: canUseCodeAssist ? ["gemini-3-flash-preview", "gemini-2.5-pro", "gemini-2.5-flash"] : ["gemini-2.5-pro", "gemini-2.5-flash"]
   };
   if (options.json) {
     console.log(JSON.stringify(report, null, 2));
@@ -14518,7 +14518,8 @@ var CodeAssistClient = class {
         retryDelay: 100,
         retry: 3,
         noResponseRetries: 3,
-        statusCodesToRetry: [[429, 429], [499, 499], [500, 599]]
+        statusCodesToRetry: [[499, 499], [500, 599]]
+        // Note: 429 (rate limit) is NOT retried here — callers handle it
       }
     });
     return fromCAResponse(res.data);
@@ -14554,7 +14555,8 @@ var CodeAssistClient = class {
         retryDelay: 100,
         retry: 3,
         noResponseRetries: 3,
-        statusCodesToRetry: [[429, 429], [499, 499], [500, 599]]
+        statusCodesToRetry: [[499, 499], [500, 599]]
+        // Note: 429 (rate limit) is NOT retried here — callers handle it
       }
     });
     return res.data;
@@ -14571,7 +14573,7 @@ var CodeAssistClient = class {
 };
 
 // src/lib/standard-client.ts
-var STANDARD_FALLBACK_MODEL = "gemini-2.5-flash";
+var STANDARD_FALLBACK_MODEL = "gemini-2.5-pro";
 var STANDARD_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta";
 var StandardClient = class {
   constructor(auth) {
@@ -14656,28 +14658,35 @@ var MAX_CONSECUTIVE_FAILURES = 3;
 var GeminiClient = class {
   constructor(auth, forceStandard = false) {
     this.auth = auth;
+    this.isOAuthUser = auth.type === "oauth" || auth.type === "adc";
     if (auth.oauthClient && !forceStandard) {
       this.codeAssistClient = new CodeAssistClient(auth.oauthClient);
     }
     if (forceStandard) {
       this.degraded = true;
     }
-    this.standardClient = new StandardClient(auth);
+    if (!this.isOAuthUser) {
+      this.standardClient = new StandardClient(auth);
+    }
   }
   codeAssistClient;
   standardClient;
   consecutiveFailures = 0;
   degraded = false;
+  isOAuthUser;
   get isDegraded() {
     return this.degraded;
   }
   async generateContent(params) {
-    if (!this.degraded && this.codeAssistClient) {
+    if (this.codeAssistClient && !this.degraded) {
       try {
         const result = await this.codeAssistClient.generateContent(params);
         this.consecutiveFailures = 0;
         return result;
       } catch (err) {
+        if (this.isOAuthUser) {
+          throw err;
+        }
         this.consecutiveFailures++;
         if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           this.degraded = true;
@@ -14687,11 +14696,14 @@ var GeminiClient = class {
         }
       }
     }
+    if (!this.standardClient) {
+      throw new Error("No available API client. Code Assist API failed and standard API is not available for OAuth users.");
+    }
     const fallbackParams = this.degraded ? { ...params, model: STANDARD_FALLBACK_MODEL } : params;
     return this.standardClient.generateContent(fallbackParams);
   }
   async *generateContentStream(params) {
-    if (!this.degraded && this.codeAssistClient) {
+    if (this.codeAssistClient && !this.degraded) {
       try {
         const stream = this.codeAssistClient.generateContentStream(params);
         let firstChunkReceived = false;
@@ -14704,6 +14716,9 @@ var GeminiClient = class {
         }
         return;
       } catch (err) {
+        if (this.isOAuthUser) {
+          throw err;
+        }
         this.consecutiveFailures++;
         if (this.consecutiveFailures >= MAX_CONSECUTIVE_FAILURES) {
           this.degraded = true;
@@ -14712,6 +14727,9 @@ var GeminiClient = class {
           throw err;
         }
       }
+    }
+    if (!this.standardClient) {
+      throw new Error("No available API client. Code Assist API failed and standard API is not available for OAuth users.");
     }
     const fallbackParams = this.degraded ? { ...params, model: STANDARD_FALLBACK_MODEL } : params;
     yield* this.standardClient.generateContentStream(fallbackParams);
@@ -15164,7 +15182,7 @@ async function executeTool(name, args, cwd) {
 
 // src/agents/codebase-investigator.ts
 var CODE_ASSIST_MODEL = "gemini-3-flash-preview";
-var STANDARD_FALLBACK_MODEL2 = "gemini-2.5-flash";
+var STANDARD_FALLBACK_MODEL2 = "gemini-2.5-pro";
 var DEFAULT_THINKING_BUDGET = 8192;
 function getGenerationConfig(useCodeAssist) {
   return {
@@ -15336,6 +15354,10 @@ function progress2(message) {
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
   console.error(`[${time}] ${message}`);
 }
+function isRateLimitError(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED");
+}
 function extractFunctionCalls(parts) {
   const calls = [];
   let idx = 0;
@@ -15370,37 +15392,45 @@ async function collectStreamResponse(stream) {
   }
   return allParts;
 }
-async function runAgentLoop(client, config) {
+function buildGenerationConfig(config, model) {
+  if (model === config.model) {
+    return config.generationConfig;
+  }
+  return {
+    ...config.generationConfig,
+    thinkingConfig: {
+      includeThoughts: true,
+      thinkingBudget: 8192
+    }
+  };
+}
+async function callModel(client, config, model, history, allTools) {
+  const stream = client.generateContentStream({
+    model,
+    contents: history,
+    systemInstruction: { role: "system", parts: [{ text: config.systemPrompt }] },
+    tools: [{ functionDeclarations: allTools }],
+    generationConfig: buildGenerationConfig(config, model)
+  });
+  return await collectStreamResponse(stream);
+}
+async function executeLoop(client, config, model) {
   const history = [];
   const completeTaskDecl = buildCompleteTaskDeclaration(config.outputSchema);
   const allTools = [...config.tools, completeTaskDecl];
   history.push({ role: "user", parts: [{ text: config.query }] });
   const startTime = Date.now();
   let turnCount = 0;
-  let rateLimitWaitMs = 0;
   while (turnCount < config.maxTurns) {
-    const effectiveElapsed = Date.now() - startTime - rateLimitWaitMs;
-    if (effectiveElapsed > config.maxTimeMs) {
+    if (Date.now() - startTime > config.maxTimeMs) {
       progress2("Time limit exceeded. Attempting recovery turn...");
-      const recovery2 = await attemptRecoveryTurn(client, config, history, allTools, TIMEOUT_WARNING);
+      const recovery2 = await attemptRecoveryTurn(client, config, model, history, allTools, TIMEOUT_WARNING);
       if (recovery2) return recovery2;
       return { result: "Investigation timed out before completion.", terminateReason: "TIMEOUT" };
     }
     turnCount++;
-    progress2(`Turn ${turnCount}/${config.maxTurns}...`);
-    let modelParts;
-    try {
-      const retryResult = await callModelWithRetry(client, config, history, allTools);
-      modelParts = retryResult.parts;
-      rateLimitWaitMs += retryResult.rateLimitWaitMs;
-    } catch (err) {
-      const errMsg = err.message;
-      if (errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED")) {
-        progress2("Rate limit exceeded after retries. Ending investigation early.");
-        return { result: "Investigation paused due to API rate limiting. Partial results may be available in the conversation history.", terminateReason: "ERROR" };
-      }
-      throw err;
-    }
+    progress2(`Turn ${turnCount}/${config.maxTurns} [${model}]...`);
+    const modelParts = await callModel(client, config, model, history, allTools);
     history.push({ role: "model", parts: modelParts });
     const functionCalls = extractFunctionCalls(modelParts);
     for (const part of modelParts) {
@@ -15447,15 +15477,25 @@ async function runAgentLoop(client, config) {
     history.push({ role: "user", parts: responseParts });
   }
   progress2("Max turns exceeded. Attempting recovery turn...");
-  const recovery = await attemptRecoveryTurn(client, config, history, allTools, MAX_TURNS_WARNING);
+  const recovery = await attemptRecoveryTurn(client, config, model, history, allTools, MAX_TURNS_WARNING);
   if (recovery) return recovery;
   return { result: "Investigation reached maximum turns before completion.", terminateReason: "MAX_TURNS" };
 }
-async function attemptRecoveryTurn(client, config, history, allTools, warningMessage) {
+async function runAgentLoop(client, config) {
+  try {
+    return await executeLoop(client, config, config.model);
+  } catch (err) {
+    if (isRateLimitError(err) && config.model !== config.fallbackModel) {
+      progress2(`Rate limited on ${config.model}. Restarting with ${config.fallbackModel}...`);
+      return await executeLoop(client, config, config.fallbackModel);
+    }
+    throw err;
+  }
+}
+async function attemptRecoveryTurn(client, config, model, history, allTools, warningMessage) {
   history.push({ role: "user", parts: [{ text: warningMessage }] });
   try {
-    const retryResult = await callModelWithRetry(client, config, history, allTools);
-    const modelParts = retryResult.parts;
+    const modelParts = await callModel(client, config, model, history, allTools);
     const functionCalls = extractFunctionCalls(modelParts);
     for (const { call } of functionCalls) {
       if (call.name === COMPLETE_TASK_TOOL_NAME) {
@@ -15473,35 +15513,6 @@ async function attemptRecoveryTurn(client, config, history, allTools, warningMes
   }
   return null;
 }
-async function callModelWithRetry(client, config, history, allTools, maxRetries = 3) {
-  let totalWaitMs = 0;
-  for (let attempt = 0; attempt <= maxRetries; attempt++) {
-    try {
-      const stream = client.generateContentStream({
-        model: config.model,
-        contents: history,
-        systemInstruction: { role: "system", parts: [{ text: config.systemPrompt }] },
-        tools: [{ functionDeclarations: allTools }],
-        generationConfig: config.generationConfig
-      });
-      return { parts: await collectStreamResponse(stream), rateLimitWaitMs: totalWaitMs };
-    } catch (err) {
-      const errMsg = err.message;
-      const isRateLimit = errMsg.includes("429") || errMsg.includes("RESOURCE_EXHAUSTED");
-      if (isRateLimit && attempt < maxRetries) {
-        const waitMatch = /reset after (\d+)s/.exec(errMsg);
-        const waitSec = waitMatch ? parseInt(waitMatch[1], 10) + 2 : 30 * (attempt + 1);
-        progress2(`Rate limited. Waiting ${waitSec}s before retry (${attempt + 1}/${maxRetries})...`);
-        const waitMs = waitSec * 1e3;
-        totalWaitMs += waitMs;
-        await new Promise((r) => setTimeout(r, waitMs));
-        continue;
-      }
-      throw err;
-    }
-  }
-  throw new Error("Max retries exceeded");
-}
 function summarizeArgs(args) {
   const entries = Object.entries(args);
   if (entries.length === 0) return "";
@@ -15517,7 +15528,8 @@ function summarizeArgs(args) {
 function renderInvestigationReport(raw) {
   let report;
   try {
-    report = JSON.parse(raw);
+    const cleaned = raw.replace(/^```json?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+    report = JSON.parse(cleaned);
   } catch {
     return raw;
   }
@@ -15547,7 +15559,8 @@ function renderInvestigationReport(raw) {
 function renderOpinionReport(raw) {
   let report;
   try {
-    report = JSON.parse(raw);
+    const cleaned = raw.replace(/^```json?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+    report = JSON.parse(cleaned);
   } catch {
     return raw;
   }
@@ -15576,7 +15589,8 @@ function renderOpinionReport(raw) {
 function renderAnalysisReport(raw) {
   let report;
   try {
-    report = JSON.parse(raw);
+    const cleaned = raw.replace(/^```json?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+    report = JSON.parse(cleaned);
   } catch {
     return raw;
   }
@@ -15680,167 +15694,329 @@ function progress3(message) {
 }
 
 // src/commands/analyze.ts
+var import_node_fs7 = require("node:fs");
+var import_node_path8 = require("node:path");
+
+// src/agents/analyze-pipeline.ts
 var import_node_fs6 = require("node:fs");
 var import_node_path7 = require("node:path");
-
-// src/agents/codebase-analyzer.ts
-var CODE_ASSIST_MODEL2 = "gemini-3-flash-preview";
-var STANDARD_FALLBACK_MODEL3 = "gemini-2.5-flash";
-var DEFAULT_THINKING_BUDGET2 = 8192;
-function getGenerationConfig2(useCodeAssist) {
-  return {
-    temperature: 0.1,
-    topP: 0.95,
-    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET2 }
-  };
+var PRUNE_DIRS3 = /* @__PURE__ */ new Set([
+  "node_modules",
+  "dist",
+  "build",
+  ".git",
+  ".next",
+  ".nuxt",
+  "coverage",
+  ".cache",
+  "__pycache__",
+  "venv",
+  ".venv",
+  "vendor",
+  "target",
+  "out",
+  ".turbo",
+  ".yarn",
+  ".svelte-kit"
+]);
+var TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
+  ".ts",
+  ".tsx",
+  ".js",
+  ".jsx",
+  ".mjs",
+  ".cjs",
+  ".go",
+  ".py",
+  ".rs",
+  ".java",
+  ".kt",
+  ".rb",
+  ".php",
+  ".c",
+  ".h",
+  ".cpp",
+  ".hpp",
+  ".css",
+  ".scss",
+  ".html",
+  ".vue",
+  ".svelte",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".toml",
+  ".xml",
+  ".md",
+  ".txt",
+  ".sh",
+  ".bash",
+  ".zsh",
+  ".sql",
+  ".graphql",
+  ".proto",
+  ".env",
+  ".gitignore",
+  ".dockerignore",
+  ""
+  // files without extension (Makefile, Dockerfile, etc.)
+]);
+var SIMPLE_FILE_COUNT = 5;
+var SIMPLE_TOTAL_SIZE = 2e4;
+var MAX_BATCH_SIZE = 1e5;
+var CHEAP_MODEL = "gemini-2.5-flash";
+function isTextFile(name) {
+  const ext = (0, import_node_path7.extname)(name).toLowerCase();
+  if (ext === "") {
+    const known = ["Makefile", "Dockerfile", "Procfile", "Gemfile", "Rakefile", "Vagrantfile"];
+    return known.includes(name) || name.startsWith(".");
+  }
+  return TEXT_EXTENSIONS.has(ext);
 }
-var outputSchema2 = {
-  type: "object",
-  properties: {
-    ProjectSummary: {
-      type: "string",
-      description: "A concise overview of the project: what it is, what problem it solves, and its core design philosophy."
-    },
-    TechStack: {
-      type: "object",
-      description: "Primary language, framework, and key external dependencies.",
-      properties: {
-        language: { type: "string" },
-        framework: { type: "string" },
-        keyDependencies: {
-          type: "array",
-          description: "Important external dependencies and their purpose.",
-          items: {
-            type: "object",
-            properties: {
-              name: { type: "string" },
-              purpose: { type: "string" }
-            },
-            required: ["name", "purpose"]
-          }
-        }
-      },
-      required: ["language"]
-    },
-    ModuleMap: {
-      type: "array",
-      description: "Top-level modules/directories and their responsibilities.",
-      items: {
-        type: "object",
-        properties: {
-          path: { type: "string", description: "Directory or file path." },
-          role: { type: "string", description: "What this module is responsible for." },
-          keyFiles: {
-            type: "array",
-            description: "The most important files within this module.",
-            items: { type: "string" }
-          },
-          keyExports: {
-            type: "array",
-            description: "Key exported symbols (functions, classes, types).",
-            items: { type: "string" }
-          }
-        },
-        required: ["path", "role"]
-      }
-    },
-    Conventions: {
-      type: "array",
-      description: "Detected coding patterns and conventions used in the project.",
-      items: {
-        type: "object",
-        properties: {
-          pattern: { type: "string", description: 'Name of the pattern (e.g., "Repository Pattern", "Functional Options").' },
-          description: { type: "string", description: "How this pattern is used in the project." },
-          examples: {
-            type: "array",
-            description: "File paths where this pattern is demonstrated.",
-            items: { type: "string" }
-          }
-        },
-        required: ["pattern", "description"]
-      }
-    },
-    EntryPoints: {
-      type: "array",
-      description: "Where execution begins: main functions, CLI commands, API routes, exported library interfaces.",
-      items: {
-        type: "object",
-        properties: {
-          path: { type: "string" },
-          description: { type: "string" }
-        },
-        required: ["path", "description"]
-      }
-    },
-    ArchitectureNotes: {
-      type: "string",
-      description: "Free-form notes on architectural decisions, trade-offs, potential gotchas, and anything a developer should know before making changes."
+function scanDirectory(rootPath, dirPath, batches) {
+  const absDir = (0, import_node_path7.join)(rootPath, dirPath);
+  let entries;
+  try {
+    entries = (0, import_node_fs6.readdirSync)(absDir);
+  } catch {
+    return;
+  }
+  const files = [];
+  const subdirs = [];
+  for (const name of entries.sort()) {
+    if (name.startsWith(".") && dirPath === "") continue;
+    if (PRUNE_DIRS3.has(name)) continue;
+    const relPath = dirPath ? `${dirPath}/${name}` : name;
+    const absPath = (0, import_node_path7.join)(rootPath, relPath);
+    let stat;
+    try {
+      stat = (0, import_node_fs6.statSync)(absPath);
+    } catch {
+      continue;
     }
-  },
-  required: ["ProjectSummary", "ModuleMap", "Conventions", "EntryPoints"]
-};
-var SYSTEM_PROMPT2 = `You are **Codebase Analyzer**, a specialized AI agent that produces comprehensive project context documents.
-
-Your **SOLE PURPOSE** is to explore a codebase broadly and produce a structured overview that another AI assistant (or a developer) can use to immediately understand the project without having to explore it themselves.
-
-## What you must produce
-Your output will be used as a **context document** \u2014 a reference that gets loaded at the start of every development session. It must be:
-- **Accurate**: Every file path, symbol name, and relationship must be verified by reading actual source code.
-- **Complete**: Cover all top-level modules, not just the ones that seem most interesting.
-- **Concise**: Focus on what matters for understanding the architecture, not implementation details.
-- **Actionable**: A developer reading this should know where to look for any given concern.
-
-## Investigation strategy
-1. **Start broad**: List the root directory to understand the top-level structure.
-2. **Identify the tech stack**: Read package.json/go.mod/Cargo.toml/pyproject.toml to understand dependencies.
-3. **Read the README**: If present, this provides the author's intent.
-4. **Map each module**: For each top-level directory, understand its purpose by reading key files.
-5. **Detect conventions**: Look for recurring patterns (error handling, dependency injection, middleware, etc.).
-6. **Identify entry points**: Find main functions, exported interfaces, route definitions, CLI commands.
-7. **Note architecture decisions**: Document trade-offs, unusual patterns, or things that might surprise a newcomer.
-
-## Rules
-- **DO** read actual source files to verify your claims. Do not guess based on file names alone.
-- **DO** cover the entire project, not just the most complex parts.
-- **DO** note both the patterns used AND where they are used (with file paths).
-- **DO NOT** write implementation code.
-- **DO NOT** go deeper than necessary \u2014 you are mapping, not debugging.
-- **DO NOT** spend more than 1-2 turns on any single module.
-
-## Termination
-When you have covered all top-level modules and have a clear picture of the project, call \`complete_task\` with your findings.
-`;
-function buildQuery2(cwd, focus) {
-  const focusClause = focus ? `
-Pay special attention to the \`${focus}\` area of the codebase.` : "";
-  return `Analyze the codebase at ${cwd} and produce a comprehensive project context document.${focusClause}
-
-Start by listing the root directory, then systematically explore each module.`;
+    if (stat.isDirectory()) {
+      subdirs.push(relPath);
+    } else if (stat.isFile() && isTextFile(name)) {
+      if (stat.size > MAX_BATCH_SIZE) {
+        try {
+          const content = (0, import_node_fs6.readFileSync)(absPath, "utf-8").slice(0, MAX_BATCH_SIZE);
+          files.push({ path: relPath, content, size: stat.size });
+        } catch {
+        }
+      } else if (stat.size > 0) {
+        try {
+          const content = (0, import_node_fs6.readFileSync)(absPath, "utf-8");
+          files.push({ path: relPath, content, size: stat.size });
+        } catch {
+        }
+      }
+    }
+  }
+  if (files.length > 0) {
+    const totalSize = files.reduce((s, f) => s + f.size, 0);
+    batches.push({
+      dirPath: dirPath || "/",
+      files,
+      totalSize,
+      isSimple: files.length <= SIMPLE_FILE_COUNT && totalSize <= SIMPLE_TOTAL_SIZE
+    });
+  }
+  for (const sub of subdirs) {
+    scanDirectory(rootPath, sub, batches);
+  }
 }
-function createAnalyzerConfig(cwd, useCodeAssist, focus) {
-  return {
-    model: useCodeAssist ? CODE_ASSIST_MODEL2 : STANDARD_FALLBACK_MODEL3,
-    fallbackModel: STANDARD_FALLBACK_MODEL3,
-    systemPrompt: SYSTEM_PROMPT2,
-    query: buildQuery2(cwd, focus),
-    tools: getToolDeclarations(),
-    generationConfig: getGenerationConfig2(useCodeAssist),
-    maxTurns: 15,
-    maxTimeMs: 5 * 60 * 1e3,
-    // 5 minutes (broader exploration)
-    outputSchema: {
-      outputName: "report",
-      description: "The project context document as a JSON object.",
-      schema: outputSchema2
-    },
-    cwd
-  };
+function buildDirectoryBatches(rootPath) {
+  const batches = [];
+  scanDirectory(rootPath, "", batches);
+  return batches;
+}
+function buildDirectoryPrompt(batch) {
+  const fileList = batch.files.map((f) => `- ${f.path} (${f.size} bytes)`).join("\n");
+  let totalContent = "";
+  let budget = MAX_BATCH_SIZE;
+  for (const file of batch.files) {
+    if (budget <= 0) break;
+    const slice = file.content.slice(0, budget);
+    totalContent += `
+--- FILE: ${file.path} ---
+${slice}
+`;
+    budget -= slice.length;
+  }
+  return `Analyze the following directory and its files. Produce a concise summary.
+
+Directory: ${batch.dirPath}
+Files:
+${fileList}
+
+<source_code>
+${totalContent}
+</source_code>
+
+Respond with a JSON object:
+{
+  "summary": "What this directory/module is responsible for (1-3 sentences)",
+  "keyFiles": ["most important files"],
+  "keyExports": ["key exported symbols (functions, classes, types, interfaces)"],
+  "patterns": ["design patterns or conventions observed (e.g. 'Functional Options', 'Repository Pattern')"]
+}
+
+Respond ONLY with the JSON object, no markdown fences, no explanation.`;
+}
+async function summarizeDirectory(client, batch, primaryModel) {
+  const model = batch.isSimple ? CHEAP_MODEL : primaryModel;
+  const prompt = buildDirectoryPrompt(batch);
+  progress4(`  [${model}] ${batch.dirPath} (${batch.files.length} files, ${Math.round(batch.totalSize / 1024)}KB)`);
+  try {
+    const response = await client.generateContent({
+      model,
+      contents: [{ role: "user", parts: [{ text: prompt }] }]
+    });
+    const text = extractText(response);
+    try {
+      const parsed = JSON.parse(text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
+      return {
+        dirPath: batch.dirPath,
+        summary: parsed.summary ?? "",
+        keyFiles: parsed.keyFiles ?? [],
+        keyExports: parsed.keyExports ?? [],
+        patterns: parsed.patterns ?? []
+      };
+    } catch {
+      return {
+        dirPath: batch.dirPath,
+        summary: text.slice(0, 500),
+        keyFiles: batch.files.map((f) => f.path),
+        keyExports: [],
+        patterns: []
+      };
+    }
+  } catch (err) {
+    if (isRateLimitError2(err)) {
+      const waitSec = extractWaitTime(err);
+      const retryModel = model !== CHEAP_MODEL ? CHEAP_MODEL : model;
+      progress4(`  Rate limited on ${model}. Waiting ${waitSec}s then retrying with ${retryModel}...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1e3));
+      return summarizeDirectory(client, { ...batch, isSimple: true }, retryModel);
+    }
+    return {
+      dirPath: batch.dirPath,
+      summary: `(analysis failed: ${err.message})`,
+      keyFiles: batch.files.map((f) => f.path),
+      keyExports: [],
+      patterns: []
+    };
+  }
+}
+function buildSynthesisPrompt(summaries, rootPath) {
+  const moduleSections = summaries.map((s) => {
+    const exports2 = s.keyExports.length > 0 ? `
+Key exports: ${s.keyExports.join(", ")}` : "";
+    const patterns = s.patterns.length > 0 ? `
+Patterns: ${s.patterns.join(", ")}` : "";
+    return `### ${s.dirPath}
+${s.summary}${exports2}${patterns}`;
+  }).join("\n\n");
+  return `You are producing a project context document from directory-level summaries.
+Synthesize the following module summaries into a comprehensive project overview.
+
+Project root: ${rootPath}
+
+${moduleSections}
+
+Respond with a JSON object:
+{
+  "ProjectSummary": "What this project is, what problem it solves, its core design philosophy (2-4 sentences)",
+  "TechStack": {
+    "language": "primary language",
+    "framework": "main framework if any",
+    "keyDependencies": [{"name": "dep-name", "purpose": "what it's used for"}]
+  },
+  "ModuleMap": [{"path": "dir/", "role": "what this module does", "keyFiles": ["file1.ts"], "keyExports": ["Symbol1"]}],
+  "Conventions": [{"pattern": "Pattern Name", "description": "how it's used", "examples": ["file.ts"]}],
+  "EntryPoints": [{"path": "main.ts", "description": "what this entry point does"}],
+  "ArchitectureNotes": "Key architectural decisions, trade-offs, gotchas (free-form text)"
+}
+
+Respond ONLY with the JSON object, no markdown fences.`;
+}
+async function synthesize(client, summaries, rootPath, primaryModel) {
+  const prompt = buildSynthesisPrompt(summaries, rootPath);
+  progress4(`Synthesizing final report [${primaryModel}]...`);
+  try {
+    const response = await client.generateContent({
+      model: primaryModel,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature: 0.1,
+        topP: 0.95,
+        thinkingConfig: { includeThoughts: true, thinkingBudget: 8192 }
+      }
+    });
+    return extractText(response);
+  } catch (err) {
+    if (isRateLimitError2(err)) {
+      const waitSec = extractWaitTime(err);
+      const retryModel = primaryModel !== CHEAP_MODEL ? CHEAP_MODEL : primaryModel;
+      progress4(`Rate limited on ${primaryModel}. Waiting ${waitSec}s then retrying with ${retryModel}...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1e3));
+      const response = await client.generateContent({
+        model: retryModel,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.1, topP: 0.95 }
+      });
+      return extractText(response);
+    }
+    throw err;
+  }
+}
+async function runAnalyzePipeline(client, rootPath, primaryModel, focus) {
+  const scanRoot = focus ? (0, import_node_path7.join)(rootPath, focus) : rootPath;
+  progress4("Phase 1: Scanning directory tree...");
+  const batches = buildDirectoryBatches(scanRoot);
+  progress4(`  Found ${batches.length} directories with source files.`);
+  if (batches.length === 0) {
+    return JSON.stringify({ ProjectSummary: "No source files found.", ModuleMap: [], Conventions: [], EntryPoints: [] });
+  }
+  progress4(`Phase 2: Summarizing ${batches.length} directories...`);
+  const summaries = [];
+  for (const batch of batches) {
+    const summary = await summarizeDirectory(client, batch, primaryModel);
+    summaries.push(summary);
+  }
+  progress4("Phase 3: Synthesizing final report...");
+  return await synthesize(client, summaries, rootPath, primaryModel);
+}
+function extractText(response) {
+  const parts = [];
+  for (const candidate of response.candidates ?? []) {
+    for (const part of candidate.content?.parts ?? []) {
+      if (part.text && !part.thought) {
+        parts.push(part.text);
+      }
+    }
+  }
+  return parts.join("");
+}
+function isRateLimitError2(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("exhausted");
+}
+function extractWaitTime(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  const match = /reset after (\d+)s/.exec(msg);
+  return match ? parseInt(match[1], 10) + 2 : 10;
+}
+function progress4(message) {
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  console.error(`[${time}] ${message}`);
 }
 
 // src/commands/analyze.ts
+var CODE_ASSIST_MODEL2 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL3 = "gemini-2.5-pro";
 async function runAnalyze(options = {}) {
-  const cwd = (0, import_node_path7.resolve)(options.path ?? process.cwd());
+  const cwd = (0, import_node_path8.resolve)(options.path ?? process.cwd());
   const { focus, writePath, forceStandard = false } = options;
   let auth;
   try {
@@ -15852,46 +16028,43 @@ async function runAnalyze(options = {}) {
   }
   const client = new GeminiClient(auth, forceStandard);
   const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
-  progress4(`Auth type: ${auth.type}`);
-  progress4(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
-  progress4(`Project: ${cwd}`);
-  if (focus) progress4(`Focus: ${focus}`);
+  const primaryModel = useCodeAssist ? CODE_ASSIST_MODEL2 : STANDARD_FALLBACK_MODEL3;
+  progress5(`Auth type: ${auth.type}`);
+  progress5(`API: ${useCodeAssist ? "Code Assist" : "Standard"}`);
+  progress5(`Primary model: ${primaryModel}`);
+  progress5(`Project: ${cwd}`);
+  if (focus) progress5(`Focus: ${focus}`);
   console.error("");
-  const config = createAnalyzerConfig(cwd, useCodeAssist, focus);
-  const result = await runAgentLoop(client, config);
-  const rendered = renderAnalysisReport(result.result);
+  const rawReport = await runAnalyzePipeline(client, cwd, primaryModel, focus);
+  const rendered = renderAnalysisReport(rawReport);
   console.log(rendered);
   if (writePath) {
-    const outPath = (0, import_node_path7.resolve)(cwd, writePath);
-    (0, import_node_fs6.mkdirSync)((0, import_node_path7.dirname)(outPath), { recursive: true });
-    (0, import_node_fs6.writeFileSync)(outPath, rendered, "utf-8");
-    progress4(`Context document saved to: ${outPath}`);
-  }
-  if (result.terminateReason !== "GOAL") {
-    console.error(`
-[gemini] Analysis ended with reason: ${result.terminateReason}`);
+    const outPath = (0, import_node_path8.resolve)(cwd, writePath);
+    (0, import_node_fs7.mkdirSync)((0, import_node_path8.dirname)(outPath), { recursive: true });
+    (0, import_node_fs7.writeFileSync)(outPath, rendered, "utf-8");
+    progress5(`Context document saved to: ${outPath}`);
   }
 }
-function progress4(message) {
+function progress5(message) {
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
   console.error(`[${time}] ${message}`);
 }
 
 // src/commands/opinion.ts
-var import_node_path8 = require("node:path");
+var import_node_path9 = require("node:path");
 
 // src/agents/opinion-advisor.ts
 var CODE_ASSIST_MODEL3 = "gemini-3-flash-preview";
-var STANDARD_FALLBACK_MODEL4 = "gemini-2.5-flash";
-var DEFAULT_THINKING_BUDGET3 = 8192;
-function getGenerationConfig3(useCodeAssist) {
+var STANDARD_FALLBACK_MODEL4 = "gemini-2.5-pro";
+var DEFAULT_THINKING_BUDGET2 = 8192;
+function getGenerationConfig2(useCodeAssist) {
   return {
     temperature: 0.3,
     topP: 0.95,
-    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET3 }
+    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET2 }
   };
 }
-var outputSchema3 = {
+var outputSchema2 = {
   type: "object",
   properties: {
     Opinion: {
@@ -15922,7 +16095,7 @@ var outputSchema3 = {
   },
   required: ["Opinion", "Reasoning"]
 };
-var SYSTEM_PROMPT3 = `You are **Technical Advisor**, a senior software engineer providing second opinions on technical decisions.
+var SYSTEM_PROMPT2 = `You are **Technical Advisor**, a senior software engineer providing second opinions on technical decisions.
 
 You receive a question along with context from an ongoing development session. Your role is to provide an independent, well-reasoned perspective.
 
@@ -15942,24 +16115,24 @@ You receive a question along with context from an ongoing development session. Y
 ## Termination
 When you have formed your opinion, call \`complete_task\` with your findings. Do not over-investigate \u2014 this is a focused consultation, not a deep audit.
 `;
-function buildQuery3(question) {
+function buildQuery2(question) {
   return question;
 }
 function createOpinionConfig(question, cwd, useCodeAssist) {
   return {
     model: useCodeAssist ? CODE_ASSIST_MODEL3 : STANDARD_FALLBACK_MODEL4,
     fallbackModel: STANDARD_FALLBACK_MODEL4,
-    systemPrompt: SYSTEM_PROMPT3,
-    query: buildQuery3(question),
+    systemPrompt: SYSTEM_PROMPT2,
+    query: buildQuery2(question),
     tools: getToolDeclarations(),
-    generationConfig: getGenerationConfig3(useCodeAssist),
+    generationConfig: getGenerationConfig2(useCodeAssist),
     maxTurns: 6,
     maxTimeMs: 2 * 60 * 1e3,
     // 2 minutes (focused consultation)
     outputSchema: {
       outputName: "report",
       description: "The technical opinion as a JSON object.",
-      schema: outputSchema3
+      schema: outputSchema2
     },
     cwd
   };
@@ -15968,7 +16141,7 @@ function createOpinionConfig(question, cwd, useCodeAssist) {
 // src/commands/opinion.ts
 async function runOpinion(question, cwd, options = {}) {
   const { path: scopePath, forceStandard = false } = options;
-  const effectiveCwd = scopePath ? (0, import_node_path8.resolve)(cwd, scopePath) : cwd;
+  const effectiveCwd = scopePath ? (0, import_node_path9.resolve)(cwd, scopePath) : cwd;
   if (!question.trim()) {
     console.error("Error: Please provide a question for the opinion.");
     process.exit(1);
@@ -15983,8 +16156,8 @@ async function runOpinion(question, cwd, options = {}) {
   }
   const client = new GeminiClient(auth, forceStandard);
   const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
-  progress5(`Auth type: ${auth.type}`);
-  progress5(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
+  progress6(`Auth type: ${auth.type}`);
+  progress6(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
   console.error("");
   const config = createOpinionConfig(question, effectiveCwd, useCodeAssist);
   const result = await runAgentLoop(client, config);
@@ -15995,7 +16168,7 @@ async function runOpinion(question, cwd, options = {}) {
 [gemini] Opinion ended with reason: ${result.terminateReason}`);
   }
 }
-function progress5(message) {
+function progress6(message) {
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
   console.error(`[${time}] ${message}`);
 }
@@ -16117,9 +16290,166 @@ async function runResult(cwd, options = {}) {
 
 // src/commands/background.ts
 var import_node_child_process2 = require("node:child_process");
-var import_node_path10 = require("node:path");
+var import_node_path11 = require("node:path");
 var import_node_url = require("node:url");
 init_state();
+
+// src/agents/codebase-analyzer.ts
+var CODE_ASSIST_MODEL4 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL5 = "gemini-2.5-pro";
+var DEFAULT_THINKING_BUDGET3 = 8192;
+function getGenerationConfig3(useCodeAssist) {
+  return {
+    temperature: 0.1,
+    topP: 0.95,
+    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET3 }
+  };
+}
+var outputSchema3 = {
+  type: "object",
+  properties: {
+    ProjectSummary: {
+      type: "string",
+      description: "A concise overview of the project: what it is, what problem it solves, and its core design philosophy."
+    },
+    TechStack: {
+      type: "object",
+      description: "Primary language, framework, and key external dependencies.",
+      properties: {
+        language: { type: "string" },
+        framework: { type: "string" },
+        keyDependencies: {
+          type: "array",
+          description: "Important external dependencies and their purpose.",
+          items: {
+            type: "object",
+            properties: {
+              name: { type: "string" },
+              purpose: { type: "string" }
+            },
+            required: ["name", "purpose"]
+          }
+        }
+      },
+      required: ["language"]
+    },
+    ModuleMap: {
+      type: "array",
+      description: "Top-level modules/directories and their responsibilities.",
+      items: {
+        type: "object",
+        properties: {
+          path: { type: "string", description: "Directory or file path." },
+          role: { type: "string", description: "What this module is responsible for." },
+          keyFiles: {
+            type: "array",
+            description: "The most important files within this module.",
+            items: { type: "string" }
+          },
+          keyExports: {
+            type: "array",
+            description: "Key exported symbols (functions, classes, types).",
+            items: { type: "string" }
+          }
+        },
+        required: ["path", "role"]
+      }
+    },
+    Conventions: {
+      type: "array",
+      description: "Detected coding patterns and conventions used in the project.",
+      items: {
+        type: "object",
+        properties: {
+          pattern: { type: "string", description: 'Name of the pattern (e.g., "Repository Pattern", "Functional Options").' },
+          description: { type: "string", description: "How this pattern is used in the project." },
+          examples: {
+            type: "array",
+            description: "File paths where this pattern is demonstrated.",
+            items: { type: "string" }
+          }
+        },
+        required: ["pattern", "description"]
+      }
+    },
+    EntryPoints: {
+      type: "array",
+      description: "Where execution begins: main functions, CLI commands, API routes, exported library interfaces.",
+      items: {
+        type: "object",
+        properties: {
+          path: { type: "string" },
+          description: { type: "string" }
+        },
+        required: ["path", "description"]
+      }
+    },
+    ArchitectureNotes: {
+      type: "string",
+      description: "Free-form notes on architectural decisions, trade-offs, potential gotchas, and anything a developer should know before making changes."
+    }
+  },
+  required: ["ProjectSummary", "ModuleMap", "Conventions", "EntryPoints"]
+};
+var SYSTEM_PROMPT3 = `You are **Codebase Analyzer**, a specialized AI agent that produces comprehensive project context documents.
+
+Your **SOLE PURPOSE** is to explore a codebase broadly and produce a structured overview that another AI assistant (or a developer) can use to immediately understand the project without having to explore it themselves.
+
+## What you must produce
+Your output will be used as a **context document** \u2014 a reference that gets loaded at the start of every development session. It must be:
+- **Accurate**: Every file path, symbol name, and relationship must be verified by reading actual source code.
+- **Complete**: Cover all top-level modules, not just the ones that seem most interesting.
+- **Concise**: Focus on what matters for understanding the architecture, not implementation details.
+- **Actionable**: A developer reading this should know where to look for any given concern.
+
+## Investigation strategy
+1. **Start broad**: List the root directory to understand the top-level structure.
+2. **Identify the tech stack**: Read package.json/go.mod/Cargo.toml/pyproject.toml to understand dependencies.
+3. **Read the README**: If present, this provides the author's intent.
+4. **Map each module**: For each top-level directory, understand its purpose by reading key files.
+5. **Detect conventions**: Look for recurring patterns (error handling, dependency injection, middleware, etc.).
+6. **Identify entry points**: Find main functions, exported interfaces, route definitions, CLI commands.
+7. **Note architecture decisions**: Document trade-offs, unusual patterns, or things that might surprise a newcomer.
+
+## Rules
+- **DO** read actual source files to verify your claims. Do not guess based on file names alone.
+- **DO** cover the entire project, not just the most complex parts.
+- **DO** note both the patterns used AND where they are used (with file paths).
+- **DO NOT** write implementation code.
+- **DO NOT** go deeper than necessary \u2014 you are mapping, not debugging.
+- **DO NOT** spend more than 1-2 turns on any single module.
+
+## Termination
+When you have covered all top-level modules and have a clear picture of the project, call \`complete_task\` with your findings.
+`;
+function buildQuery3(cwd, focus) {
+  const focusClause = focus ? `
+Pay special attention to the \`${focus}\` area of the codebase.` : "";
+  return `Analyze the codebase at ${cwd} and produce a comprehensive project context document.${focusClause}
+
+Start by listing the root directory, then systematically explore each module.`;
+}
+function createAnalyzerConfig(cwd, useCodeAssist, focus) {
+  return {
+    model: useCodeAssist ? CODE_ASSIST_MODEL4 : STANDARD_FALLBACK_MODEL5,
+    fallbackModel: STANDARD_FALLBACK_MODEL5,
+    systemPrompt: SYSTEM_PROMPT3,
+    query: buildQuery3(cwd, focus),
+    tools: getToolDeclarations(),
+    generationConfig: getGenerationConfig3(useCodeAssist),
+    maxTurns: 15,
+    maxTimeMs: 5 * 60 * 1e3,
+    // 5 minutes (broader exploration)
+    outputSchema: {
+      outputName: "report",
+      description: "The project context document as a JSON object.",
+      schema: outputSchema3
+    },
+    cwd
+  };
+}
+
+// src/commands/background.ts
 var import_meta = {};
 function enqueueBackground(command, args, flags, cwd) {
   const stateDir = resolveStateDir(cwd);
@@ -16184,7 +16514,7 @@ async function runWorker(jobId, cwd) {
     const client = new GeminiClient(auth, forceStandard);
     const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
     const scopePath = typeof flags["path"] === "string" ? flags["path"] : void 0;
-    const effectiveCwd = scopePath ? (0, import_node_path10.resolve)(cwd, scopePath) : cwd;
+    const effectiveCwd = scopePath ? (0, import_node_path11.resolve)(cwd, scopePath) : cwd;
     let result;
     let rendered;
     switch (command) {
@@ -16215,8 +16545,8 @@ async function runWorker(jobId, cwd) {
     const writePath = typeof flags["write"] === "string" ? flags["write"] : void 0;
     if (writePath) {
       const { writeFileSync: writeFileSync4, mkdirSync: mkdirSync4 } = await import("node:fs");
-      const outPath = (0, import_node_path10.resolve)(cwd, writePath);
-      mkdirSync4((0, import_node_path10.dirname)(outPath), { recursive: true });
+      const outPath = (0, import_node_path11.resolve)(cwd, writePath);
+      mkdirSync4((0, import_node_path11.dirname)(outPath), { recursive: true });
       writeFileSync4(outPath, rendered, "utf-8");
       appendLog(stateDir, jobId, `Report saved to: ${outPath}`);
     }

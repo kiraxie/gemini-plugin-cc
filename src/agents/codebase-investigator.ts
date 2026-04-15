@@ -13,10 +13,11 @@ import { getToolDeclarations } from '../tools/registry.js';
 // ─── Model Configuration ─────────────────────────────────────────────────────
 
 /** Code Assist API model (gemini-3 preview with ThinkingLevel.HIGH) */
+/** Code Assist uses flash for subagents (cheaper, separate quota from main pro agent) */
 const CODE_ASSIST_MODEL = 'gemini-3-flash-preview';
 
 /** Standard API fallback model */
-const STANDARD_FALLBACK_MODEL = 'gemini-2.5-flash';
+const STANDARD_FALLBACK_MODEL = 'gemini-2.5-pro';
 
 /** Thinking budget cap (matches Gemini CLI DEFAULT_THINKING_MODE) */
 const DEFAULT_THINKING_BUDGET = 8192;
