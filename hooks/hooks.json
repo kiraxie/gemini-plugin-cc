@@ -1,0 +1,16 @@
+{
+  "description": "Gemini Companion plugin hooks.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs\" setup --check",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}

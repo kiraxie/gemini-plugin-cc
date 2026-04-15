@@ -80,7 +80,7 @@ out
 
 # Nuxt.js build / generate output
 .nuxt
-dist
+# NOTE: dist/ is NOT ignored — plugin must ship compiled JS
 
 # Gatsby files
 .cache/
