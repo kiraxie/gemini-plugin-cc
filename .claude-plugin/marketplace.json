@@ -1,0 +1,21 @@
+{
+  "name": "gemini-plugin-cc",
+  "owner": {
+    "name": "Kira Hsieh"
+  },
+  "metadata": {
+    "description": "Gemini-powered codebase investigation and analysis plugin for Claude Code.",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "gemini",
+      "description": "Use Gemini from Claude Code to investigate codebases or delegate tasks.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Kira Hsieh"
+      },
+      "source": "."
+    }
+  ]
+}
