@@ -2184,7 +2184,7 @@ var require_lib2 = __commonJS({
       let accum = [];
       let accumBytes = 0;
       let abort = false;
-      return new Body.Promise(function(resolve7, reject) {
+      return new Body.Promise(function(resolve8, reject) {
         let resTimeout;
         if (_this4.timeout) {
           resTimeout = setTimeout(function() {
@@ -2218,7 +2218,7 @@ var require_lib2 = __commonJS({
           }
           clearTimeout(resTimeout);
           try {
-            resolve7(Buffer.concat(accum, accumBytes));
+            resolve8(Buffer.concat(accum, accumBytes));
           } catch (err) {
             reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
           }
@@ -2893,7 +2893,7 @@ var require_lib2 = __commonJS({
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
       Body.Promise = fetch2.Promise;
-      return new fetch2.Promise(function(resolve7, reject) {
+      return new fetch2.Promise(function(resolve8, reject) {
         const request = new Request(url, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -3026,7 +3026,7 @@ var require_lib2 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve7(fetch2(new Request(locationURL, requestOpts)));
+                resolve8(fetch2(new Request(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -3047,7 +3047,7 @@ var require_lib2 = __commonJS({
           const codings = headers.get("Content-Encoding");
           if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
             response = new Response(body, response_options);
-            resolve7(response);
+            resolve8(response);
             return;
           }
           const zlibOptions = {
@@ -3057,7 +3057,7 @@ var require_lib2 = __commonJS({
           if (codings == "gzip" || codings == "x-gzip") {
             body = body.pipe(zlib.createGunzip(zlibOptions));
             response = new Response(body, response_options);
-            resolve7(response);
+            resolve8(response);
             return;
           }
           if (codings == "deflate" || codings == "x-deflate") {
@@ -3069,12 +3069,12 @@ var require_lib2 = __commonJS({
                 body = body.pipe(zlib.createInflateRaw());
               }
               response = new Response(body, response_options);
-              resolve7(response);
+              resolve8(response);
             });
             raw.on("end", function() {
               if (!response) {
                 response = new Response(body, response_options);
-                resolve7(response);
+                resolve8(response);
               }
             });
             return;
@@ -3082,11 +3082,11 @@ var require_lib2 = __commonJS({
           if (codings == "br" && typeof zlib.createBrotliDecompress === "function") {
             body = body.pipe(zlib.createBrotliDecompress());
             response = new Response(body, response_options);
-            resolve7(response);
+            resolve8(response);
             return;
           }
           response = new Response(body, response_options);
-          resolve7(response);
+          resolve8(response);
         });
         writeToStream(req, request);
       });
@@ -3445,8 +3445,8 @@ var require_retry = __commonJS({
       }
       const delay = getNextRetryDelay(config);
       err.config.retryConfig.currentRetryAttempt += 1;
-      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve7) => {
-        setTimeout(resolve7, delay);
+      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve8) => {
+        setTimeout(resolve8, delay);
       });
       if (config.onRetryAttempt) {
         config.onRetryAttempt(err);
@@ -4576,8 +4576,8 @@ var require_helpers = __commonJS({
     function req(url, opts = {}) {
       const href = typeof url === "string" ? url : url.href;
       const req2 = (href.startsWith("https:") ? https : http).request(url, opts);
-      const promise = new Promise((resolve7, reject) => {
-        req2.once("response", resolve7).once("error", reject).end();
+      const promise = new Promise((resolve8, reject) => {
+        req2.once("response", resolve8).once("error", reject).end();
       });
       req2.then = promise.then.bind(promise);
       return req2;
@@ -4754,7 +4754,7 @@ var require_parse_proxy_response = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve7, reject) => {
+      return new Promise((resolve8, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -4820,7 +4820,7 @@ var require_parse_proxy_response = __commonJS({
           }
           debug("got proxy server response: %o %o", firstLine, headers);
           cleanup();
-          resolve7({
+          resolve8({
             connect: {
               statusCode,
               statusText,
@@ -5121,11 +5121,11 @@ var require_gaxios = __commonJS({
           if (!opts.validateStatus(translatedResponse.status)) {
             if (opts.responseType === "stream") {
               let response = "";
-              await new Promise((resolve7) => {
+              await new Promise((resolve8) => {
                 (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("data", (chunk) => {
                   response += chunk;
                 });
-                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve7);
+                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve8);
               });
               translatedResponse.data = response;
             }
@@ -10617,7 +10617,7 @@ var require_jwtaccess = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve8, reject) => {
           if (!inputStream) {
             reject(new Error("Must pass in a stream containing the service account auth settings."));
           }
@@ -10626,7 +10626,7 @@ var require_jwtaccess = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve7();
+              resolve8();
             } catch (err) {
               reject(err);
             }
@@ -10845,7 +10845,7 @@ var require_jwtclient = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve8, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the service account auth settings.");
           }
@@ -10854,7 +10854,7 @@ var require_jwtclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve7();
+              resolve8();
             } catch (e) {
               reject(e);
             }
@@ -10974,7 +10974,7 @@ var require_refreshclient = __commonJS({
         }
       }
       async fromStreamAsync(inputStream) {
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve8, reject) => {
           if (!inputStream) {
             return reject(new Error("Must pass in a stream containing the user refresh token."));
           }
@@ -10983,7 +10983,7 @@ var require_refreshclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              return resolve7();
+              return resolve8();
             } catch (err) {
               return reject(err);
             }
@@ -12544,7 +12544,7 @@ var require_pluggable_auth_handler = __commonJS({
        * @return A promise that resolves with the executable response.
        */
       retrieveResponseFromExecutable(envMap) {
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve8, reject) => {
           const child = childProcess.spawn(this.commandComponents[0], this.commandComponents.slice(1), {
             env: { ...process.env, ...Object.fromEntries(envMap) }
           });
@@ -12566,7 +12566,7 @@ var require_pluggable_auth_handler = __commonJS({
               try {
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
-                return resolve7(response);
+                return resolve8(response);
               } catch (error) {
                 if (error instanceof executable_response_1.ExecutableResponseError) {
                   return reject(error);
@@ -13416,7 +13416,7 @@ var require_googleauth = __commonJS({
         }
       }
       fromStreamAsync(inputStream, options) {
-        return new Promise((resolve7, reject) => {
+        return new Promise((resolve8, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the Google auth settings.");
           }
@@ -13426,7 +13426,7 @@ var require_googleauth = __commonJS({
               try {
                 const data = JSON.parse(chunks.join(""));
                 const r = this._cacheClientFromJSON(data, options);
-                return resolve7(r);
+                return resolve8(r);
               } catch (err) {
                 if (!this.keyFilename)
                   throw err;
@@ -13436,7 +13436,7 @@ var require_googleauth = __commonJS({
                 });
                 this.cachedCredential = client;
                 this.setGapicJWTValues(client);
-                return resolve7(client);
+                return resolve8(client);
               }
             } catch (err) {
               return reject(err);
@@ -13472,17 +13472,17 @@ var require_googleauth = __commonJS({
        * Run the Google Cloud SDK command that prints the default project ID
        */
       async getDefaultServiceProjectId() {
-        return new Promise((resolve7) => {
+        return new Promise((resolve8) => {
           (0, child_process_1.exec)("gcloud config config-helper --format json", (err, stdout) => {
             if (!err && stdout) {
               try {
                 const projectId = JSON.parse(stdout).configuration.properties.core.project;
-                resolve7(projectId);
+                resolve8(projectId);
                 return;
               } catch (e) {
               }
             }
-            resolve7(null);
+            resolve8(null);
           });
         });
       }
@@ -15408,6 +15408,35 @@ function renderInvestigationReport(raw) {
   }
   return sections.join("\n\n");
 }
+function renderOpinionReport(raw) {
+  let report;
+  try {
+    report = JSON.parse(raw);
+  } catch {
+    return raw;
+  }
+  const sections = [];
+  sections.push("# Gemini Opinion");
+  if (report.Opinion) {
+    sections.push(report.Opinion);
+  }
+  if (report.Reasoning) {
+    sections.push("## Reasoning");
+    sections.push(report.Reasoning);
+  }
+  if (report.Alternatives && report.Alternatives.length > 0) {
+    sections.push("## Alternatives Considered");
+    for (const alt of report.Alternatives) {
+      sections.push(`### ${alt.approach ?? "Unknown"}`);
+      if (alt.prosAndCons) sections.push(alt.prosAndCons);
+    }
+  }
+  if (report.References && report.References.length > 0) {
+    sections.push("## References");
+    sections.push(report.References.map((r) => `- \`${r}\``).join("\n"));
+  }
+  return sections.join("\n\n");
+}
 function renderAnalysisReport(raw) {
   let report;
   try {
@@ -15712,6 +15741,129 @@ function progress4(message) {
   console.error(`[${time}] ${message}`);
 }
 
+// src/commands/opinion.ts
+var import_node_path8 = require("node:path");
+
+// src/agents/opinion-advisor.ts
+var CODE_ASSIST_MODEL3 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL4 = "gemini-2.5-flash";
+var DEFAULT_THINKING_BUDGET3 = 8192;
+function getGenerationConfig3(useCodeAssist) {
+  return {
+    temperature: 0.3,
+    topP: 0.95,
+    thinkingConfig: useCodeAssist ? { includeThoughts: true, thinkingLevel: "HIGH" } : { includeThoughts: true, thinkingBudget: DEFAULT_THINKING_BUDGET3 }
+  };
+}
+var outputSchema3 = {
+  type: "object",
+  properties: {
+    Opinion: {
+      type: "string",
+      description: "Your technical opinion, analysis, and recommendation."
+    },
+    Reasoning: {
+      type: "string",
+      description: "The reasoning process behind your opinion, including trade-offs considered."
+    },
+    Alternatives: {
+      type: "array",
+      description: "Alternative approaches considered and why they were or were not recommended.",
+      items: {
+        type: "object",
+        properties: {
+          approach: { type: "string" },
+          prosAndCons: { type: "string" }
+        },
+        required: ["approach", "prosAndCons"]
+      }
+    },
+    References: {
+      type: "array",
+      description: "Relevant file paths examined to form this opinion.",
+      items: { type: "string" }
+    }
+  },
+  required: ["Opinion", "Reasoning"]
+};
+var SYSTEM_PROMPT3 = `You are **Technical Advisor**, a senior software engineer providing second opinions on technical decisions.
+
+You receive a question along with context from an ongoing development session. Your role is to provide an independent, well-reasoned perspective.
+
+## Guidelines
+1. **Be direct**: Lead with your recommendation, then explain why.
+2. **Consider trade-offs**: Every technical choice has pros and cons. Acknowledge them.
+3. **Be practical**: Focus on what works in production, not just theoretical elegance.
+4. **Challenge assumptions**: If the framing of the question contains a flawed premise, say so.
+5. **Use the codebase**: If the question relates to existing code, use your tools to read the relevant files before forming an opinion. Do not guess about code you haven't seen.
+6. **Be concise**: Respect the developer's time. Don't pad your answer.
+
+## When to use tools
+- If the question references specific files, functions, or patterns in the codebase \u2192 read them first.
+- If you need to understand the project structure to give a meaningful answer \u2192 use list_directory or glob.
+- If the question is purely conceptual (e.g., "mutex vs channel in Go") \u2192 you may answer directly without tools.
+
+## Termination
+When you have formed your opinion, call \`complete_task\` with your findings. Do not over-investigate \u2014 this is a focused consultation, not a deep audit.
+`;
+function buildQuery3(question) {
+  return question;
+}
+function createOpinionConfig(question, cwd, useCodeAssist) {
+  return {
+    model: useCodeAssist ? CODE_ASSIST_MODEL3 : STANDARD_FALLBACK_MODEL4,
+    fallbackModel: STANDARD_FALLBACK_MODEL4,
+    systemPrompt: SYSTEM_PROMPT3,
+    query: buildQuery3(question),
+    tools: getToolDeclarations(),
+    generationConfig: getGenerationConfig3(useCodeAssist),
+    maxTurns: 6,
+    maxTimeMs: 2 * 60 * 1e3,
+    // 2 minutes (focused consultation)
+    outputSchema: {
+      outputName: "report",
+      description: "The technical opinion as a JSON object.",
+      schema: outputSchema3
+    },
+    cwd
+  };
+}
+
+// src/commands/opinion.ts
+async function runOpinion(question, cwd, options = {}) {
+  const { path: scopePath, forceStandard = false } = options;
+  const effectiveCwd = scopePath ? (0, import_node_path8.resolve)(cwd, scopePath) : cwd;
+  if (!question.trim()) {
+    console.error("Error: Please provide a question for the opinion.");
+    process.exit(1);
+  }
+  let auth;
+  try {
+    auth = await createAuth();
+  } catch (err) {
+    console.error(`Authentication failed: ${err.message}`);
+    console.error("Run `gemini auth login` or set GEMINI_API_KEY to continue.");
+    process.exit(1);
+  }
+  const client = new GeminiClient(auth, forceStandard);
+  const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
+  progress5(`Auth type: ${auth.type}`);
+  progress5(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
+  console.error("");
+  const config = createOpinionConfig(question, effectiveCwd, useCodeAssist);
+  const result = await runAgentLoop(client, config);
+  const rendered = renderOpinionReport(result.result);
+  console.log(rendered);
+  if (result.terminateReason !== "GOAL") {
+    console.error(`
+[gemini] Opinion ended with reason: ${result.terminateReason}`);
+  }
+}
+function progress5(message) {
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  console.error(`[${time}] ${message}`);
+}
+
 // src/gemini-companion.ts
 function printUsage() {
   console.log(
@@ -15720,11 +15872,13 @@ function printUsage() {
       "  gemini-companion setup [--check] [--json]",
       '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
       "  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]",
+      '  gemini-companion opinion "<question with context>" [--path <dir>] [--standard]',
       "",
       "Commands:",
       "  setup        Check authentication status and plugin readiness",
       "  investigate   Run a deep Gemini-powered codebase investigation",
-      "  analyze      Produce a project context document using Gemini"
+      "  analyze      Produce a project context document using Gemini",
+      "  opinion      Get a second opinion from Gemini on a technical question"
     ].join("\n")
   );
 }
@@ -15775,6 +15929,14 @@ async function main() {
         forceStandard: flags["standard"] === true
       });
       break;
+    case "opinion": {
+      const question = args.join(" ") || String(flags["question"] ?? "");
+      await runOpinion(question, import_node_process.default.cwd(), {
+        path: typeof flags["path"] === "string" ? flags["path"] : void 0,
+        forceStandard: flags["standard"] === true
+      });
+      break;
+    }
     case "help":
     case "--help":
     case "-h":

@@ -13,6 +13,7 @@ import process from 'node:process';
 import { runSetup } from './commands/setup.js';
 import { runInvestigate } from './commands/investigate.js';
 import { runAnalyze } from './commands/analyze.js';
+import { runOpinion } from './commands/opinion.js';
 
 function printUsage(): void {
   console.log(
@@ -21,11 +22,13 @@ function printUsage(): void {
       '  gemini-companion setup [--check] [--json]',
       '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--standard]',
       '  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--standard]',
+      '  gemini-companion opinion "<question with context>" [--path <dir>] [--standard]',
       '',
       'Commands:',
       '  setup        Check authentication status and plugin readiness',
       '  investigate   Run a deep Gemini-powered codebase investigation',
       '  analyze      Produce a project context document using Gemini',
+      '  opinion      Get a second opinion from Gemini on a technical question',
     ].join('\n'),
   );
 }
@@ -83,6 +86,15 @@ async function main(): Promise<void> {
         forceStandard: flags['standard'] === true,
       });
       break;
+
+    case 'opinion': {
+      const question = args.join(' ') || String(flags['question'] ?? '');
+      await runOpinion(question, process.cwd(), {
+        path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
+        forceStandard: flags['standard'] === true,
+      });
+      break;
+    }
 
     case 'help':
     case '--help':

@@ -9,22 +9,27 @@ user-invocable: false
 Use this skill only inside the `gemini:gemini-rescue` subagent.
 
 Primary helpers:
-- `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" investigate "<objective>"`
+- `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" investigate "<objective>" [--path <dir>]`
+- `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" opinion "<question with context>" [--path <dir>]`
 - `node "${CLAUDE_PLUGIN_ROOT}/dist/gemini-companion.cjs" analyze [--path <dir>] [--focus <path>]`
 
-Execution rules:
-- The rescue subagent is a forwarder, not an orchestrator. Its only job is to invoke `investigate` once and return that stdout unchanged.
+Command selection:
+- `investigate` — deep codebase exploration (how does X work? find the bug in Y)
+- `opinion` — second opinion on a technical decision (should I use X or Y?)
+- `analyze` — broad project context generation
+
+Use exactly one command invocation per rescue handoff.
+
+Context enrichment (opinion only):
+- The Gemini companion cannot see the Claude Code conversation.
+- For `opinion`, you MUST include a summary of the relevant conversation context in the prompt text.
+- Include: what the user is working on, the specific question, approaches considered, and relevant code snippets.
+
+General rules:
 - Prefer the helper over hand-rolled `git`, direct API calls, or any other Bash activity.
 - Do not call `setup` from `gemini:gemini-rescue`.
-- Use `investigate` for every rescue request, including bug analysis, architecture mapping, dependency tracing, and feature exploration.
-- You may use the `gemini-prompting` skill to rewrite the user's request into a tighter investigation objective before the single `investigate` call.
-- That prompt drafting is the only Claude-side work allowed. Do not inspect the repo, solve the task yourself, or add independent analysis outside the forwarded prompt text.
-
-Command selection:
-- Use exactly one `investigate` invocation per rescue handoff.
-- Preserve the user's task text as-is apart from prompt shaping.
-
-Safety rules:
-- The investigator is read-only. It cannot modify files.
+- You may use the `gemini-prompting` skill to shape the prompt.
+- Do not inspect the repo, solve the task yourself, or add independent analysis.
+- All commands are read-only. They cannot modify files.
 - Return the stdout of the command exactly as-is.
 - If the Bash call fails or Gemini cannot be invoked, return nothing.

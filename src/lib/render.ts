@@ -60,6 +60,60 @@ export function renderInvestigationReport(raw: string): string {
   return sections.join('\n\n');
 }
 
+// ─── Opinion Report ──────────────────────────────────────────────────────────
+
+interface Alternative {
+  approach?: string;
+  prosAndCons?: string;
+}
+
+interface OpinionReport {
+  Opinion?: string;
+  Reasoning?: string;
+  Alternatives?: Alternative[];
+  References?: string[];
+}
+
+/**
+ * Renders an opinion report JSON into readable Markdown.
+ */
+export function renderOpinionReport(raw: string): string {
+  let report: OpinionReport;
+  try {
+    report = JSON.parse(raw) as OpinionReport;
+  } catch {
+    return raw;
+  }
+
+  const sections: string[] = [];
+
+  sections.push('# Gemini Opinion');
+
+  if (report.Opinion) {
+    sections.push(report.Opinion);
+  }
+
+  if (report.Reasoning) {
+    sections.push('## Reasoning');
+    sections.push(report.Reasoning);
+  }
+
+  if (report.Alternatives && report.Alternatives.length > 0) {
+    sections.push('## Alternatives Considered');
+    for (const alt of report.Alternatives) {
+      sections.push(`### ${alt.approach ?? 'Unknown'}`);
+      if (alt.prosAndCons) sections.push(alt.prosAndCons);
+    }
+  }
+
+  if (report.References && report.References.length > 0) {
+    sections.push('## References');
+    sections.push(report.References.map(r => `- \`${r}\``).join('\n'));
+  }
+
+  return sections.join('\n\n');
+}
+
 // ─── Analysis Report ─────────────────────────────────────────────────────────
 
 interface Dependency {
