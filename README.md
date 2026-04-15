@@ -10,8 +10,11 @@ A [Claude Code](https://claude.ai/code) plugin that delegates codebase investiga
 ## Installation
 
 ```bash
-claude plugin install gemini@https://github.com/kiraxie/gemini-plugin-cc
+claude plugin marketplace add kiraxie/gemini-plugin-cc
+claude plugin install gemini@gemini-plugin-cc
 ```
+
+Or interactively: `/plugin` → Marketplaces → Add → `kiraxie/gemini-plugin-cc`, then install from Discover tab.
 
 ## Commands
 
