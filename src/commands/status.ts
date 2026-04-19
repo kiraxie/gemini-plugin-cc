@@ -3,7 +3,7 @@
  */
 
 import {
-  resolveStateDir, listJobs, readJobFile, readLogTail, getSessionId,
+  resolveStateDir, listJobs, readJobFile, readLogTail,
 } from '../lib/state.js';
 
 export interface StatusOptions {
@@ -14,7 +14,7 @@ export interface StatusOptions {
 
 export async function runStatus(cwd: string, options: StatusOptions = {}): Promise<void> {
   const stateDir = resolveStateDir(cwd);
-  const sessionId = options.all ? undefined : getSessionId();
+  const sessionId = undefined; // Always show all jobs regardless of session
 
   if (options.jobId) {
     // Show single job
@@ -47,29 +47,81 @@ export async function runStatus(cwd: string, options: StatusOptions = {}): Promi
     return;
   }
 
-  const running = jobs.filter(j => j.status === 'queued' || j.status === 'running');
-  const finished = jobs.filter(j => j.status === 'completed' || j.status === 'failed');
+  const rows = jobs.slice(0, 20).map(job => {
+    const elapsed = formatElapsed(job);
+    const summary = job.status === 'failed' && job.errorMessage
+      ? job.errorMessage.slice(0, 50)
+      : job.summary.slice(0, 50);
+    const actions = buildActions(job);
+    return {
+      job: job.id,
+      kind: job.kind,
+      status: job.status,
+      phase: job.phase,
+      elapsed,
+      summary,
+      actions,
+    };
+  });
 
-  const sections: string[] = [];
+  console.log(renderBoxTable(
+    ['Job', 'Kind', 'Status', 'Phase', 'Elapsed', 'Summary', 'Actions'],
+    rows.map(r => [r.job, r.kind, r.status, r.phase, r.elapsed, r.summary, r.actions]),
+  ));
+}
 
-  if (running.length > 0) {
-    sections.push('## Running');
-    for (const job of running) {
-      const logTail = readLogTail(stateDir, job.id, 3);
-      const lastLine = logTail[logTail.length - 1] ?? '';
-      sections.push(`- **${job.id}** \`${job.kind}\` — ${job.summary} [${job.status}] ${lastLine}`);
-    }
+function buildActions(job: import('../lib/state.js').JobRecord): string {
+  const parts: string[] = [];
+  if (job.status === 'running' || job.status === 'queued') {
+    parts.push(`/gemini:status ${job.id}`);
   }
-
-  if (finished.length > 0) {
-    sections.push('## Recent');
-    for (const job of finished.slice(0, 10)) {
-      const icon = job.status === 'completed' ? '✓' : '✗';
-      sections.push(`- ${icon} **${job.id}** \`${job.kind}\` — ${job.summary} [${job.status}]`);
-    }
+  if (job.status === 'completed') {
+    parts.push(`/gemini:result ${job.id}`);
   }
+  return parts.join(' ');
+}
 
-  console.log(sections.join('\n\n'));
+function renderBoxTable(headers: string[], rows: string[][]): string {
+  const colCount = headers.length;
+  // Calculate column widths
+  const widths = headers.map((h, i) => {
+    const cellWidths = rows.map(r => (r[i] ?? '').length);
+    return Math.max(h.length, ...cellWidths);
+  });
+
+  const pad = (s: string, w: number) => s + ' '.repeat(Math.max(0, w - s.length));
+  const line = (left: string, mid: string, right: string, fill: string) =>
+    left + widths.map(w => fill.repeat(w + 2)).join(mid) + right;
+
+  const top    = line('┌', '┬', '┐', '─');
+  const sep    = line('├', '┼', '┤', '─');
+  const bottom = line('└', '┴', '┘', '─');
+
+  const formatRow = (cells: string[]) =>
+    '│' + cells.map((c, i) => ` ${pad(c, widths[i])} `).join('│') + '│';
+
+  const lines: string[] = [top, formatRow(headers), sep];
+  for (let i = 0; i < rows.length; i++) {
+    lines.push(formatRow(rows[i]));
+    if (i < rows.length - 1) lines.push(sep);
+  }
+  lines.push(bottom);
+  return lines.join('\n');
+}
+
+function formatElapsed(job: import('../lib/state.js').JobRecord): string {
+  const start = job.startedAt ?? job.createdAt;
+  const end = job.completedAt ?? new Date().toISOString();
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 0) return '-';
+  const sec = Math.floor(ms / 1000);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const remSec = sec % 60;
+  if (min < 60) return `${min}m${remSec}s`;
+  const hr = Math.floor(min / 60);
+  const remMin = min % 60;
+  return `${hr}h${remMin}m`;
 }
 
 function renderJobDetail(job: import('../lib/state.js').JobRecord, logTail: string[]): string {

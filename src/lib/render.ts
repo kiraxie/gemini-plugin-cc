@@ -155,13 +155,30 @@ interface AnalysisReport {
 }
 
 /**
- * Renders an analysis report JSON into a Markdown context document.
- * Falls back to the raw string if parsing fails.
+ * Renders an analysis report into a Markdown context document.
+ *
+ * The pipeline now asks Gemini for Markdown directly, so in the happy path we
+ * strip any accidental ```markdown fences and return as-is. The legacy JSON
+ * schema path is still handled for backward compatibility (opinion/investigate
+ * agents, or older cached outputs).
  */
 export function renderAnalysisReport(raw: string): string {
+  // Strip only an outer ```markdown wrapper at the very start/end of the whole
+  // string. No `m` flag — we must NOT strip fenced blocks inside the document
+  // (e.g. an ASCII data-flow diagram wrapped in ```text).
+  const stripped = raw
+    .replace(/^```(?:markdown|md)?\s*\n?/, '')
+    .replace(/\n?```\s*$/, '')
+    .trim();
+
+  // If it starts with a markdown heading, treat as markdown.
+  if (/^#\s/.test(stripped)) {
+    return stripped;
+  }
+
+  // Fall back to the legacy JSON schema.
   let report: AnalysisReport;
   try {
-    // Strip markdown code fences if present
     const cleaned = raw.replace(/^```json?\s*\n?/m, '').replace(/\n?```\s*$/m, '').trim();
     report = JSON.parse(cleaned) as AnalysisReport;
   } catch {

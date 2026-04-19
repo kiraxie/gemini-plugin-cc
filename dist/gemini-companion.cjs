@@ -15587,6 +15587,10 @@ function renderOpinionReport(raw) {
   return sections.join("\n\n");
 }
 function renderAnalysisReport(raw) {
+  const stripped = raw.replace(/^```(?:markdown|md)?\s*\n?/, "").replace(/\n?```\s*$/, "").trim();
+  if (/^#\s/.test(stripped)) {
+    return stripped;
+  }
   let report;
   try {
     const cleaned = raw.replace(/^```json?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
@@ -15717,9 +15721,11 @@ var PRUNE_DIRS3 = /* @__PURE__ */ new Set([
   "out",
   ".turbo",
   ".yarn",
-  ".svelte-kit"
+  ".svelte-kit",
+  "__snapshots__",
+  "__mocks__"
 ]);
-var TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
+var CODE_EXTENSIONS = /* @__PURE__ */ new Set([
   ".ts",
   ".tsx",
   ".js",
@@ -15731,49 +15737,200 @@ var TEXT_EXTENSIONS = /* @__PURE__ */ new Set([
   ".rs",
   ".java",
   ".kt",
-  ".rb",
-  ".php",
-  ".c",
-  ".h",
-  ".cpp",
-  ".hpp",
-  ".css",
-  ".scss",
-  ".html",
-  ".vue",
-  ".svelte",
-  ".json",
-  ".yaml",
-  ".yml",
-  ".toml",
-  ".xml",
-  ".md",
-  ".txt",
-  ".sh",
-  ".bash",
-  ".zsh",
-  ".sql",
-  ".graphql",
-  ".proto",
-  ".env",
-  ".gitignore",
-  ".dockerignore",
-  ""
-  // files without extension (Makefile, Dockerfile, etc.)
+  ".rb"
 ]);
-var SIMPLE_FILE_COUNT = 5;
-var SIMPLE_TOTAL_SIZE = 2e4;
-var MAX_BATCH_SIZE = 1e5;
+var MAX_FILES_PER_DIR = 20;
+var MAX_EXPORTS_PER_FILE = 15;
+var MAX_README_CHARS = 4e3;
+var MAX_SKELETON_CHARS = 25e4;
 var CHEAP_MODEL = "gemini-2.5-flash";
-function isTextFile(name) {
-  const ext = (0, import_node_path7.extname)(name).toLowerCase();
-  if (ext === "") {
-    const known = ["Makefile", "Dockerfile", "Procfile", "Gemfile", "Rakefile", "Vagrantfile"];
-    return known.includes(name) || name.startsWith(".");
-  }
-  return TEXT_EXTENSIONS.has(ext);
+function isCodeFile(name) {
+  return CODE_EXTENSIONS.has((0, import_node_path7.extname)(name).toLowerCase());
 }
-function scanDirectory(rootPath, dirPath, batches) {
+function inferModuleRole(dirPath) {
+  const parts = dirPath.toLowerCase().split("/");
+  const last = parts[parts.length - 1] ?? "";
+  const rules = [
+    [/^(src|lib|pkg|internal)$/, "Main source code"],
+    [/^(cmd|cli|bin)$/, "Command-line entry points"],
+    [/^(auth|authn|authz)$/, "Authentication / authorization"],
+    [/^(api|routes?|handlers?|controllers?|endpoints?)$/, "HTTP / RPC routing layer"],
+    [/^(db|database|storage|repos?|repositories?|dal|persistence)$/, "Data persistence layer"],
+    [/^(models?|entities|schemas?|domain)$/, "Domain models / data schemas"],
+    [/^(services?|usecases?|business)$/, "Business logic / services"],
+    [/^(client|clients?|sdk)$/, "External API clients"],
+    [/^(middleware|middlewares)$/, "HTTP middleware"],
+    [/^(utils?|helpers?|common|shared)$/, "Shared utilities"],
+    [/^(config|configs|settings)$/, "Configuration"],
+    [/^(types?|typings|interfaces?)$/, "Type definitions"],
+    [/^(tests?|__tests__|specs?)$/, "Test suite"],
+    [/^(migrations?|migrate)$/, "Database migrations"],
+    [/^(scripts?|tools?)$/, "Build / dev scripts"],
+    [/^(docs?|documentation)$/, "Documentation"],
+    [/^(public|static|assets)$/, "Static assets"],
+    [/^(components?|ui|views?|pages?)$/, "UI components"],
+    [/^(hooks?)$/, "React hooks / reusable logic"],
+    [/^(store|stores|state|reducers?)$/, "State management"],
+    [/^(agents?)$/, "AI agents / orchestration"],
+    [/^(commands?)$/, "Command implementations"],
+    [/^(tools?)$/, "Tool implementations"]
+  ];
+  for (const [re, role] of rules) {
+    if (re.test(last)) return role;
+  }
+  return void 0;
+}
+function extractExportsFromTS(content) {
+  const exports2 = [];
+  const patterns = [
+    /^export\s+(?:async\s+)?function\s+(\w+)/gm,
+    /^export\s+(?:abstract\s+)?class\s+(\w+)/gm,
+    /^export\s+(?:const|let|var)\s+(\w+)/gm,
+    /^export\s+(?:type|interface)\s+(\w+)/gm,
+    /^export\s+enum\s+(\w+)/gm,
+    /^export\s+default\s+(?:class|function)\s+(\w+)/gm
+  ];
+  for (const p of patterns) {
+    let m2;
+    while ((m2 = p.exec(content)) !== null) exports2.push(m2[1]);
+  }
+  const reExport = /^export\s+\{\s*([^}]+)\s*\}/gm;
+  let m;
+  while ((m = reExport.exec(content)) !== null) {
+    const names = m[1].split(",").map((s) => s.trim().split(/\s+as\s+/)[0]).filter(Boolean);
+    exports2.push(...names);
+  }
+  if (/^export\s+default\b/m.test(content) && !exports2.includes("default")) {
+    exports2.push("default");
+  }
+  return dedup(exports2).slice(0, MAX_EXPORTS_PER_FILE);
+}
+function extractExportsFromGo(content) {
+  const exports2 = [];
+  const patterns = [
+    // func Foo(...) or func (r *Recv) Foo(...)
+    /^func\s+(?:\([^)]+\)\s+)?([A-Z]\w*)/gm,
+    /^type\s+([A-Z]\w*)\s+(?:struct|interface|func|\w)/gm,
+    /^var\s+([A-Z]\w*)/gm,
+    /^const\s+([A-Z]\w*)/gm
+  ];
+  for (const p of patterns) {
+    let m;
+    while ((m = p.exec(content)) !== null) exports2.push(m[1]);
+  }
+  return dedup(exports2).slice(0, MAX_EXPORTS_PER_FILE);
+}
+function extractExportsFromPython(content) {
+  const exports2 = [];
+  const p = /^(?:def|class)\s+([A-Za-z_]\w*)/gm;
+  let m;
+  while ((m = p.exec(content)) !== null) {
+    const name = m[1];
+    if (!name.startsWith("_")) exports2.push(name);
+  }
+  return dedup(exports2).slice(0, MAX_EXPORTS_PER_FILE);
+}
+function extractExports(content, ext) {
+  switch (ext) {
+    case ".ts":
+    case ".tsx":
+    case ".js":
+    case ".jsx":
+    case ".mjs":
+    case ".cjs":
+      return extractExportsFromTS(content);
+    case ".go":
+      return extractExportsFromGo(content);
+    case ".py":
+      return extractExportsFromPython(content);
+    default:
+      return [];
+  }
+}
+function extractDocComment(content) {
+  const blockMatch = /^\s*\/\*\*?\s*([\s\S]*?)\s*\*\//.exec(content);
+  if (blockMatch) {
+    const text = blockMatch[1].replace(/^\s*\*\s?/gm, "").trim();
+    return text.split("\n")[0].slice(0, 200) || void 0;
+  }
+  const lineMatch = /^((?:\s*(?:\/\/|#).*\n)+)/.exec(content);
+  if (lineMatch) {
+    const text = lineMatch[1].replace(/^\s*(?:\/\/|#)\s?/gm, "").trim();
+    return text.split("\n")[0].slice(0, 200) || void 0;
+  }
+  return void 0;
+}
+function dedup(arr) {
+  return Array.from(new Set(arr));
+}
+function readManifests(rootPath) {
+  const manifests = [];
+  const candidates = [
+    { name: "package.json", kind: "npm" },
+    { name: "tsconfig.json", kind: "typescript" },
+    { name: "go.mod", kind: "go" },
+    { name: "pyproject.toml", kind: "python" },
+    { name: "Cargo.toml", kind: "rust" },
+    { name: "requirements.txt", kind: "python-req" },
+    { name: "Dockerfile", kind: "docker" },
+    { name: "docker-compose.yml", kind: "docker-compose" },
+    { name: "docker-compose.yaml", kind: "docker-compose" }
+  ];
+  for (const { name, kind } of candidates) {
+    const p = (0, import_node_path7.join)(rootPath, name);
+    if (!(0, import_node_fs6.existsSync)(p)) continue;
+    try {
+      const raw = (0, import_node_fs6.readFileSync)(p, "utf-8");
+      let data = {};
+      if (name.endsWith(".json")) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          data = { _raw: raw.slice(0, 2e3) };
+        }
+      } else {
+        data = { _raw: raw.slice(0, 2e3) };
+      }
+      manifests.push({ kind, path: name, data });
+    } catch {
+    }
+  }
+  return manifests;
+}
+function readReadme(rootPath) {
+  for (const name of ["README.md", "README.rst", "README.txt", "README"]) {
+    const p = (0, import_node_path7.join)(rootPath, name);
+    if ((0, import_node_fs6.existsSync)(p)) {
+      try {
+        return (0, import_node_fs6.readFileSync)(p, "utf-8").slice(0, MAX_README_CHARS);
+      } catch {
+      }
+    }
+  }
+  return null;
+}
+function inferEntryPoints(rootPath, manifests) {
+  const entries = /* @__PURE__ */ new Set();
+  const pkg = manifests.find((m) => m.kind === "npm");
+  if (pkg) {
+    const d = pkg.data;
+    if (typeof d.main === "string") entries.add(d.main);
+    if (typeof d.module === "string") entries.add(d.module);
+    if (d.bin && typeof d.bin === "object") {
+      for (const v of Object.values(d.bin)) {
+        if (typeof v === "string") entries.add(v);
+      }
+    } else if (typeof d.bin === "string") {
+      entries.add(d.bin);
+    }
+  }
+  const common = ["main.go", "cmd/main.go", "main.py", "__main__.py", "src/main.ts", "src/index.ts", "src/cli.ts", "src/server.ts", "index.ts", "index.js", "server.js"];
+  for (const c of common) {
+    if ((0, import_node_fs6.existsSync)((0, import_node_path7.join)(rootPath, c))) entries.add(c);
+  }
+  return Array.from(entries);
+}
+function scanModules(rootPath, dirPath, modules) {
   const absDir = (0, import_node_path7.join)(rootPath, dirPath);
   let entries;
   try {
@@ -15796,153 +15953,196 @@ function scanDirectory(rootPath, dirPath, batches) {
     }
     if (stat.isDirectory()) {
       subdirs.push(relPath);
-    } else if (stat.isFile() && isTextFile(name)) {
-      if (stat.size > MAX_BATCH_SIZE) {
-        try {
-          const content = (0, import_node_fs6.readFileSync)(absPath, "utf-8").slice(0, MAX_BATCH_SIZE);
-          files.push({ path: relPath, content, size: stat.size });
-        } catch {
-        }
-      } else if (stat.size > 0) {
-        try {
-          const content = (0, import_node_fs6.readFileSync)(absPath, "utf-8");
-          files.push({ path: relPath, content, size: stat.size });
-        } catch {
-        }
+    } else if (stat.isFile() && isCodeFile(name) && files.length < MAX_FILES_PER_DIR) {
+      try {
+        const content = (0, import_node_fs6.readFileSync)(absPath, "utf-8");
+        const ext = (0, import_node_path7.extname)(name).toLowerCase();
+        files.push({
+          path: relPath,
+          exports: extractExports(content, ext),
+          docComment: extractDocComment(content),
+          size: stat.size
+        });
+      } catch {
       }
     }
   }
-  if (files.length > 0) {
-    const totalSize = files.reduce((s, f) => s + f.size, 0);
-    batches.push({
-      dirPath: dirPath || "/",
+  if (files.length > 0 || subdirs.length > 0) {
+    modules.push({
+      path: dirPath || "/",
       files,
-      totalSize,
-      isSimple: files.length <= SIMPLE_FILE_COUNT && totalSize <= SIMPLE_TOTAL_SIZE
+      subdirs,
+      inferredRole: inferModuleRole(dirPath || "")
     });
   }
   for (const sub of subdirs) {
-    scanDirectory(rootPath, sub, batches);
+    scanModules(rootPath, sub, modules);
   }
 }
-function buildDirectoryBatches(rootPath) {
-  const batches = [];
-  scanDirectory(rootPath, "", batches);
-  return batches;
+function buildProjectSkeleton(rootPath) {
+  const manifests = readManifests(rootPath);
+  const readme = readReadme(rootPath);
+  const entryPoints = inferEntryPoints(rootPath, manifests);
+  const modules = [];
+  scanModules(rootPath, "", modules);
+  return { root: rootPath, readme, manifests, modules, entryPoints };
 }
-function buildDirectoryPrompt(batch) {
-  const fileList = batch.files.map((f) => `- ${f.path} (${f.size} bytes)`).join("\n");
-  let totalContent = "";
-  let budget = MAX_BATCH_SIZE;
-  for (const file of batch.files) {
-    if (budget <= 0) break;
-    const slice = file.content.slice(0, budget);
-    totalContent += `
---- FILE: ${file.path} ---
-${slice}
-`;
-    budget -= slice.length;
+function formatSkeleton(skeleton) {
+  const parts = [];
+  parts.push(`# Project: ${(0, import_node_path7.basename)(skeleton.root)}`);
+  parts.push(`Root: ${skeleton.root}`);
+  parts.push("");
+  if (skeleton.readme) {
+    parts.push("## README (authoritative description of project intent)");
+    parts.push(skeleton.readme);
+    parts.push("");
   }
-  return `Analyze the following directory and its files. Produce a concise summary.
-
-Directory: ${batch.dirPath}
-Files:
-${fileList}
-
-<source_code>
-${totalContent}
-</source_code>
-
-Respond with a JSON object:
-{
-  "summary": "What this directory/module is responsible for (1-3 sentences)",
-  "keyFiles": ["most important files"],
-  "keyExports": ["key exported symbols (functions, classes, types, interfaces)"],
-  "patterns": ["design patterns or conventions observed (e.g. 'Functional Options', 'Repository Pattern')"]
-}
-
-Respond ONLY with the JSON object, no markdown fences, no explanation.`;
-}
-async function summarizeDirectory(client, batch, primaryModel) {
-  const model = batch.isSimple ? CHEAP_MODEL : primaryModel;
-  const prompt = buildDirectoryPrompt(batch);
-  progress4(`  [${model}] ${batch.dirPath} (${batch.files.length} files, ${Math.round(batch.totalSize / 1024)}KB)`);
-  try {
-    const response = await client.generateContent({
-      model,
-      contents: [{ role: "user", parts: [{ text: prompt }] }]
-    });
-    const text = extractText(response);
-    try {
-      const parsed = JSON.parse(text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-      return {
-        dirPath: batch.dirPath,
-        summary: parsed.summary ?? "",
-        keyFiles: parsed.keyFiles ?? [],
-        keyExports: parsed.keyExports ?? [],
-        patterns: parsed.patterns ?? []
-      };
-    } catch {
-      return {
-        dirPath: batch.dirPath,
-        summary: text.slice(0, 500),
-        keyFiles: batch.files.map((f) => f.path),
-        keyExports: [],
-        patterns: []
-      };
+  if (skeleton.manifests.length > 0) {
+    parts.push("## Manifests");
+    for (const m of skeleton.manifests) {
+      parts.push(`### ${m.path} [${m.kind}]`);
+      if (m.kind === "npm") {
+        const d = m.data;
+        const selected = {
+          name: d.name,
+          version: d.version,
+          description: d.description,
+          main: d.main,
+          bin: d.bin,
+          type: d.type,
+          scripts: d.scripts,
+          dependencies: d.dependencies,
+          devDependencies: d.devDependencies
+        };
+        parts.push("```json");
+        parts.push(JSON.stringify(selected, null, 2));
+        parts.push("```");
+      } else if (m.kind === "typescript") {
+        const d = m.data;
+        const selected = { compilerOptions: d.compilerOptions, include: d.include };
+        parts.push("```json");
+        parts.push(JSON.stringify(selected, null, 2));
+        parts.push("```");
+      } else {
+        parts.push("```");
+        parts.push(typeof m.data._raw === "string" ? m.data._raw : JSON.stringify(m.data));
+        parts.push("```");
+      }
+      parts.push("");
     }
-  } catch (err) {
-    if (isRateLimitError2(err)) {
-      const waitSec = extractWaitTime(err);
-      const retryModel = model !== CHEAP_MODEL ? CHEAP_MODEL : model;
-      progress4(`  Rate limited on ${model}. Waiting ${waitSec}s then retrying with ${retryModel}...`);
-      await new Promise((r) => setTimeout(r, waitSec * 1e3));
-      return summarizeDirectory(client, { ...batch, isSimple: true }, retryModel);
-    }
-    return {
-      dirPath: batch.dirPath,
-      summary: `(analysis failed: ${err.message})`,
-      keyFiles: batch.files.map((f) => f.path),
-      keyExports: [],
-      patterns: []
-    };
   }
+  if (skeleton.entryPoints.length > 0) {
+    parts.push("## Entry Points (detected)");
+    for (const e of skeleton.entryPoints) parts.push(`- ${e}`);
+    parts.push("");
+  }
+  parts.push("## Module Structure");
+  for (const m of skeleton.modules) {
+    const role = m.inferredRole ? ` \u2014 _${m.inferredRole}_` : "";
+    parts.push(`### ${m.path}${role}`);
+    if (m.subdirs.length > 0) {
+      parts.push(`  Subdirs: ${m.subdirs.map((s) => (0, import_node_path7.basename)(s)).join(", ")}`);
+    }
+    for (const f of m.files) {
+      const fname = (0, import_node_path7.basename)(f.path);
+      const ex = f.exports.length > 0 ? ` \u2192 exports: ${f.exports.join(", ")}` : "";
+      const doc = f.docComment ? `
+    // ${f.docComment}` : "";
+      parts.push(`  - ${fname}${ex}${doc}`);
+    }
+    parts.push("");
+  }
+  let text = parts.join("\n");
+  if (text.length > MAX_SKELETON_CHARS) {
+    text = text.slice(0, MAX_SKELETON_CHARS) + "\n\n...(truncated)";
+  }
+  return text;
 }
-function buildSynthesisPrompt(summaries, rootPath) {
-  const moduleSections = summaries.map((s) => {
-    const exports2 = s.keyExports.length > 0 ? `
-Key exports: ${s.keyExports.join(", ")}` : "";
-    const patterns = s.patterns.length > 0 ? `
-Patterns: ${s.patterns.join(", ")}` : "";
-    return `### ${s.dirPath}
-${s.summary}${exports2}${patterns}`;
-  }).join("\n\n");
-  return `You are producing a project context document from directory-level summaries.
-Synthesize the following module summaries into a comprehensive project overview.
+function buildSynthesisPrompt(skeleton) {
+  return `You are writing a rough architecture document for a codebase. I have pre-extracted the project's structure below \u2014 you do NOT need to read source code. Base your analysis entirely on this skeleton.
 
-Project root: ${rootPath}
+Treat the README (if present) as the authoritative statement of project intent. Let it shape your high-level framing. Everything else (manifests, module structure, exports) is for grounding specific technical claims.
 
-${moduleSections}
+${formatSkeleton(skeleton)}
 
-Respond with a JSON object:
-{
-  "ProjectSummary": "What this project is, what problem it solves, its core design philosophy (2-4 sentences)",
-  "TechStack": {
-    "language": "primary language",
-    "framework": "main framework if any",
-    "keyDependencies": [{"name": "dep-name", "purpose": "what it's used for"}]
-  },
-  "ModuleMap": [{"path": "dir/", "role": "what this module does", "keyFiles": ["file1.ts"], "keyExports": ["Symbol1"]}],
-  "Conventions": [{"pattern": "Pattern Name", "description": "how it's used", "examples": ["file.ts"]}],
-  "EntryPoints": [{"path": "main.ts", "description": "what this entry point does"}],
-  "ArchitectureNotes": "Key architectural decisions, trade-offs, gotchas (free-form text)"
+---
+
+Write a Markdown document using EXACTLY the structure below. The tone should read like a hand-written rough architecture doc a senior engineer would give a new hire \u2014 informative, grounded, scannable, not marketing.
+
+# Project Context
+
+## Overview
+4-8 sentences. What this project is, the problem it solves, the core design philosophy. Ground this in the README if available.
+
+## Tech Stack
+- **Language / Runtime:** ...
+- **Frameworks:** ...
+- **Key Dependencies:** bullet list of 5-10 notable deps with a brief purpose each (why this project uses them).
+
+## Module Summary
+A compact table for quick scanning. Include every module you'll describe in detail below.
+
+| Module | Layer | Purpose |
+|---|---|---|
+| \`path/\` | Domain / Infrastructure / Transport / Cross-cutting / Utilities | One-line purpose |
+
+Use these layer categories consistently:
+- **Domain** \u2014 business/game/product logic (e.g. \`module/character/\`, \`src/services/\`)
+- **Infrastructure** \u2014 DB, cache, messaging, scheduling wrappers (e.g. \`pkg/database/\`)
+- **Transport** \u2014 HTTP/RPC/WebSocket entry points and routing (e.g. \`router/\`, \`src/routes/\`)
+- **Cross-cutting** \u2014 shared concerns: auth, logging, metrics, event bus
+- **Utilities** \u2014 small helpers, type defs, config
+
+## Module Details
+Aim for **15-30 modules**. For large projects, go down to the second level (e.g. \`module/character/\`, not just \`module/\`). Group modules by layer using ### Layer headers, then ####-level module entries under each.
+
+### Domain
+#### \`path/to/module/\`
+- **Responsibility:** 1-2 sentences \u2014 what this module owns.
+- **Sub-systems:** (omit this field if none) Bullet list of notable internal concepts / features grounded in subdirs or exports. e.g. "Perk Tree (\`module/character/perk/\`) \u2014 non-linear growth system"
+- **Notable details:** (omit this field if none) Anything interesting: storage strategy, integration with other modules, unusual patterns. 1-2 sentences or 1-3 bullets.
+
+### Infrastructure
+#### \`pkg/database/\`
+- **Responsibility:** ...
+- (same sub-fields as above, omit any that don't apply)
+
+### Transport
+(continue with same structure)
+
+### Cross-cutting
+(if applicable)
+
+### Utilities
+(if applicable)
+
+## Conventions & Patterns
+Detected patterns across the codebase (Repository Pattern, Middleware DI, Functional Options, etc.). 3-6 items. For each:
+- **Pattern Name:** short description, then 1-2 file examples in backticks.
+
+Be specific to THIS codebase \u2014 no generic advice.
+
+## Entry Points
+- \`path\` \u2014 1 sentence: what it does, when it's invoked.
+
+## Architecture Notes
+5-10 sentences of prose. Layering, data flow, module boundaries, noteworthy trade-offs or design decisions visible from the structure.
+
+If the data flow is non-trivial and can be clearly expressed as an ASCII diagram (e.g. request lifecycle across layers), include one inside a fenced code block. Only do this when it genuinely aids understanding; skip it otherwise.
+
+---
+
+Guidelines:
+- Ground every claim in the skeleton data \u2014 file names, exports, dependencies. If you're not sure, omit it.
+- For module descriptions, actively look at subdirs and exports to identify notable sub-systems worth naming.
+- Omit sub-fields ("Sub-systems", "Notable details") when you have nothing substantive to say \u2014 don't pad.
+- The Module Summary table and Module Details must reference the SAME modules in the same order.
+- Don't invent features that aren't supported by the skeleton.
+- Respond with the Markdown document directly. Do NOT wrap in code fences. Do NOT add any preamble or explanation.`;
 }
-
-Respond ONLY with the JSON object, no markdown fences.`;
-}
-async function synthesize(client, summaries, rootPath, primaryModel) {
-  const prompt = buildSynthesisPrompt(summaries, rootPath);
-  progress4(`Synthesizing final report [${primaryModel}]...`);
+async function synthesize(client, skeleton, primaryModel) {
+  const prompt = buildSynthesisPrompt(skeleton);
+  progress4(`Synthesizing report [${primaryModel}] (prompt: ${Math.round(prompt.length / 1024)}KB)...`);
   try {
     const response = await client.generateContent({
       model: primaryModel,
@@ -15972,20 +16172,16 @@ async function synthesize(client, summaries, rootPath, primaryModel) {
 }
 async function runAnalyzePipeline(client, rootPath, primaryModel, focus) {
   const scanRoot = focus ? (0, import_node_path7.join)(rootPath, focus) : rootPath;
-  progress4("Phase 1: Scanning directory tree...");
-  const batches = buildDirectoryBatches(scanRoot);
-  progress4(`  Found ${batches.length} directories with source files.`);
-  if (batches.length === 0) {
-    return JSON.stringify({ ProjectSummary: "No source files found.", ModuleMap: [], Conventions: [], EntryPoints: [] });
+  progress4("Phase 1: Extracting project skeleton (local)...");
+  const skeleton = buildProjectSkeleton(scanRoot);
+  const moduleCount = skeleton.modules.length;
+  const fileCount = skeleton.modules.reduce((s, m) => s + m.files.length, 0);
+  progress4(`  Found ${moduleCount} modules, ${fileCount} code files, ${skeleton.manifests.length} manifests.`);
+  if (moduleCount === 0 && skeleton.manifests.length === 0) {
+    return JSON.stringify({ ProjectSummary: "No source files or manifests found.", ModuleMap: [], Conventions: [], EntryPoints: [] });
   }
-  progress4(`Phase 2: Summarizing ${batches.length} directories...`);
-  const summaries = [];
-  for (const batch of batches) {
-    const summary = await summarizeDirectory(client, batch, primaryModel);
-    summaries.push(summary);
-  }
-  progress4("Phase 3: Synthesizing final report...");
-  return await synthesize(client, summaries, rootPath, primaryModel);
+  progress4("Phase 2: Synthesizing narrative report (1 API call)...");
+  return await synthesize(client, skeleton, primaryModel);
 }
 function extractText(response) {
   const parts = [];
@@ -16177,7 +16373,7 @@ function progress6(message) {
 init_state();
 async function runStatus(cwd, options = {}) {
   const stateDir = resolveStateDir(cwd);
-  const sessionId = options.all ? void 0 : getSessionId();
+  const sessionId = void 0;
   if (options.jobId) {
     const job = readJobFile(stateDir, options.jobId);
     if (!job) {
@@ -16201,25 +16397,68 @@ async function runStatus(cwd, options = {}) {
     console.log(JSON.stringify(jobs, null, 2));
     return;
   }
-  const running = jobs.filter((j) => j.status === "queued" || j.status === "running");
-  const finished = jobs.filter((j) => j.status === "completed" || j.status === "failed");
-  const sections = [];
-  if (running.length > 0) {
-    sections.push("## Running");
-    for (const job of running) {
-      const logTail = readLogTail(stateDir, job.id, 3);
-      const lastLine = logTail[logTail.length - 1] ?? "";
-      sections.push(`- **${job.id}** \`${job.kind}\` \u2014 ${job.summary} [${job.status}] ${lastLine}`);
-    }
+  const rows = jobs.slice(0, 20).map((job) => {
+    const elapsed = formatElapsed(job);
+    const summary = job.status === "failed" && job.errorMessage ? job.errorMessage.slice(0, 50) : job.summary.slice(0, 50);
+    const actions = buildActions(job);
+    return {
+      job: job.id,
+      kind: job.kind,
+      status: job.status,
+      phase: job.phase,
+      elapsed,
+      summary,
+      actions
+    };
+  });
+  console.log(renderBoxTable(
+    ["Job", "Kind", "Status", "Phase", "Elapsed", "Summary", "Actions"],
+    rows.map((r) => [r.job, r.kind, r.status, r.phase, r.elapsed, r.summary, r.actions])
+  ));
+}
+function buildActions(job) {
+  const parts = [];
+  if (job.status === "running" || job.status === "queued") {
+    parts.push(`/gemini:status ${job.id}`);
   }
-  if (finished.length > 0) {
-    sections.push("## Recent");
-    for (const job of finished.slice(0, 10)) {
-      const icon = job.status === "completed" ? "\u2713" : "\u2717";
-      sections.push(`- ${icon} **${job.id}** \`${job.kind}\` \u2014 ${job.summary} [${job.status}]`);
-    }
+  if (job.status === "completed") {
+    parts.push(`/gemini:result ${job.id}`);
   }
-  console.log(sections.join("\n\n"));
+  return parts.join(" ");
+}
+function renderBoxTable(headers, rows) {
+  const colCount = headers.length;
+  const widths = headers.map((h, i) => {
+    const cellWidths = rows.map((r) => (r[i] ?? "").length);
+    return Math.max(h.length, ...cellWidths);
+  });
+  const pad = (s, w) => s + " ".repeat(Math.max(0, w - s.length));
+  const line = (left, mid, right, fill) => left + widths.map((w) => fill.repeat(w + 2)).join(mid) + right;
+  const top = line("\u250C", "\u252C", "\u2510", "\u2500");
+  const sep = line("\u251C", "\u253C", "\u2524", "\u2500");
+  const bottom = line("\u2514", "\u2534", "\u2518", "\u2500");
+  const formatRow = (cells) => "\u2502" + cells.map((c, i) => ` ${pad(c, widths[i])} `).join("\u2502") + "\u2502";
+  const lines = [top, formatRow(headers), sep];
+  for (let i = 0; i < rows.length; i++) {
+    lines.push(formatRow(rows[i]));
+    if (i < rows.length - 1) lines.push(sep);
+  }
+  lines.push(bottom);
+  return lines.join("\n");
+}
+function formatElapsed(job) {
+  const start = job.startedAt ?? job.createdAt;
+  const end = job.completedAt ?? (/* @__PURE__ */ new Date()).toISOString();
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (ms < 0) return "-";
+  const sec = Math.floor(ms / 1e3);
+  if (sec < 60) return `${sec}s`;
+  const min = Math.floor(sec / 60);
+  const remSec = sec % 60;
+  if (min < 60) return `${min}m${remSec}s`;
+  const hr = Math.floor(min / 60);
+  const remMin = min % 60;
+  return `${hr}h${remMin}m`;
 }
 function renderJobDetail(job, logTail) {
   const sections = [];
