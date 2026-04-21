@@ -8,6 +8,7 @@ import process from 'node:process';
 import { runSetup } from './commands/setup.js';
 import { runInvestigate } from './commands/investigate.js';
 import { runAnalyze } from './commands/analyze.js';
+import { runSpec } from './commands/spec.js';
 import { runOpinion } from './commands/opinion.js';
 import { runStatus } from './commands/status.js';
 import { runResult } from './commands/result.js';
@@ -20,6 +21,7 @@ function printUsage(): void {
       '  gemini-companion setup [--check] [--json]',
       '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--background] [--standard]',
       '  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--background] [--standard]',
+      '  gemini-companion spec [--path <dir>] [--output <path>] [--full] [--from <hash>] [--dry-run] [--on-conflict abort|keep|overwrite] [--standard]',
       '  gemini-companion opinion "<question with context>" [--path <dir>] [--background] [--standard]',
       '  gemini-companion status [job-id] [--all] [--json]',
       '  gemini-companion result [job-id] [--json]',
@@ -28,6 +30,7 @@ function printUsage(): void {
       '  setup        Check authentication status and plugin readiness',
       '  investigate   Run a deep Gemini-powered codebase investigation',
       '  analyze      Produce a project context document using Gemini',
+      '  spec         Reverse-engineer a non-engineer functional spec to docs/SPEC.md',
       '  opinion      Get a second opinion from Gemini on a technical question',
       '  status       Show background job status',
       '  result       Retrieve background job output',
@@ -95,6 +98,24 @@ async function main(): Promise<void> {
         path: typeof flags['path'] === 'string' ? flags['path'] : undefined,
         focus: typeof flags['focus'] === 'string' ? flags['focus'] : undefined,
         writePath: typeof flags['write'] === 'string' ? flags['write'] : undefined,
+        forceStandard: flags['standard'] === true,
+      });
+      break;
+    }
+
+    case 'spec': {
+      const conflictRaw = typeof flags['on-conflict'] === 'string' ? flags['on-conflict'] : 'abort';
+      const onConflict = (['abort', 'keep', 'overwrite'].includes(conflictRaw) ? conflictRaw : 'abort') as
+        | 'abort'
+        | 'keep'
+        | 'overwrite';
+      await runSpec({
+        cwd: typeof flags['path'] === 'string' ? flags['path'] : undefined,
+        output: typeof flags['output'] === 'string' ? flags['output'] : undefined,
+        full: flags['full'] === true,
+        fromHash: typeof flags['from'] === 'string' ? flags['from'] : undefined,
+        dryRun: flags['dry-run'] === true,
+        onConflict,
         forceStandard: flags['standard'] === true,
       });
       break;

@@ -2184,7 +2184,7 @@ var require_lib2 = __commonJS({
       let accum = [];
       let accumBytes = 0;
       let abort = false;
-      return new Body.Promise(function(resolve10, reject) {
+      return new Body.Promise(function(resolve11, reject) {
         let resTimeout;
         if (_this4.timeout) {
           resTimeout = setTimeout(function() {
@@ -2218,7 +2218,7 @@ var require_lib2 = __commonJS({
           }
           clearTimeout(resTimeout);
           try {
-            resolve10(Buffer.concat(accum, accumBytes));
+            resolve11(Buffer.concat(accum, accumBytes));
           } catch (err) {
             reject(new FetchError(`Could not create Buffer from response body for ${_this4.url}: ${err.message}`, "system", err));
           }
@@ -2893,7 +2893,7 @@ var require_lib2 = __commonJS({
         throw new Error("native promise missing, set fetch.Promise to your favorite alternative");
       }
       Body.Promise = fetch2.Promise;
-      return new fetch2.Promise(function(resolve10, reject) {
+      return new fetch2.Promise(function(resolve11, reject) {
         const request = new Request(url, opts);
         const options = getNodeRequestOptions(request);
         const send = (options.protocol === "https:" ? https : http).request;
@@ -3026,7 +3026,7 @@ var require_lib2 = __commonJS({
                   requestOpts.body = void 0;
                   requestOpts.headers.delete("content-length");
                 }
-                resolve10(fetch2(new Request(locationURL, requestOpts)));
+                resolve11(fetch2(new Request(locationURL, requestOpts)));
                 finalize();
                 return;
             }
@@ -3047,7 +3047,7 @@ var require_lib2 = __commonJS({
           const codings = headers.get("Content-Encoding");
           if (!request.compress || request.method === "HEAD" || codings === null || res.statusCode === 204 || res.statusCode === 304) {
             response = new Response(body, response_options);
-            resolve10(response);
+            resolve11(response);
             return;
           }
           const zlibOptions = {
@@ -3057,7 +3057,7 @@ var require_lib2 = __commonJS({
           if (codings == "gzip" || codings == "x-gzip") {
             body = body.pipe(zlib.createGunzip(zlibOptions));
             response = new Response(body, response_options);
-            resolve10(response);
+            resolve11(response);
             return;
           }
           if (codings == "deflate" || codings == "x-deflate") {
@@ -3069,12 +3069,12 @@ var require_lib2 = __commonJS({
                 body = body.pipe(zlib.createInflateRaw());
               }
               response = new Response(body, response_options);
-              resolve10(response);
+              resolve11(response);
             });
             raw.on("end", function() {
               if (!response) {
                 response = new Response(body, response_options);
-                resolve10(response);
+                resolve11(response);
               }
             });
             return;
@@ -3082,11 +3082,11 @@ var require_lib2 = __commonJS({
           if (codings == "br" && typeof zlib.createBrotliDecompress === "function") {
             body = body.pipe(zlib.createBrotliDecompress());
             response = new Response(body, response_options);
-            resolve10(response);
+            resolve11(response);
             return;
           }
           response = new Response(body, response_options);
-          resolve10(response);
+          resolve11(response);
         });
         writeToStream(req, request);
       });
@@ -3445,8 +3445,8 @@ var require_retry = __commonJS({
       }
       const delay = getNextRetryDelay(config);
       err.config.retryConfig.currentRetryAttempt += 1;
-      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve10) => {
-        setTimeout(resolve10, delay);
+      const backoff = config.retryBackoff ? config.retryBackoff(err, delay) : new Promise((resolve11) => {
+        setTimeout(resolve11, delay);
       });
       if (config.onRetryAttempt) {
         config.onRetryAttempt(err);
@@ -4576,8 +4576,8 @@ var require_helpers = __commonJS({
     function req(url, opts = {}) {
       const href = typeof url === "string" ? url : url.href;
       const req2 = (href.startsWith("https:") ? https : http).request(url, opts);
-      const promise = new Promise((resolve10, reject) => {
-        req2.once("response", resolve10).once("error", reject).end();
+      const promise = new Promise((resolve11, reject) => {
+        req2.once("response", resolve11).once("error", reject).end();
       });
       req2.then = promise.then.bind(promise);
       return req2;
@@ -4754,7 +4754,7 @@ var require_parse_proxy_response = __commonJS({
     var debug_1 = __importDefault(require_src());
     var debug = (0, debug_1.default)("https-proxy-agent:parse-proxy-response");
     function parseProxyResponse(socket) {
-      return new Promise((resolve10, reject) => {
+      return new Promise((resolve11, reject) => {
         let buffersLength = 0;
         const buffers = [];
         function read() {
@@ -4820,7 +4820,7 @@ var require_parse_proxy_response = __commonJS({
           }
           debug("got proxy server response: %o %o", firstLine, headers);
           cleanup();
-          resolve10({
+          resolve11({
             connect: {
               statusCode,
               statusText,
@@ -5121,11 +5121,11 @@ var require_gaxios = __commonJS({
           if (!opts.validateStatus(translatedResponse.status)) {
             if (opts.responseType === "stream") {
               let response = "";
-              await new Promise((resolve10) => {
+              await new Promise((resolve11) => {
                 (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("data", (chunk) => {
                   response += chunk;
                 });
-                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve10);
+                (translatedResponse === null || translatedResponse === void 0 ? void 0 : translatedResponse.data).on("end", resolve11);
               });
               translatedResponse.data = response;
             }
@@ -10617,7 +10617,7 @@ var require_jwtaccess = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve10, reject) => {
+        return new Promise((resolve11, reject) => {
           if (!inputStream) {
             reject(new Error("Must pass in a stream containing the service account auth settings."));
           }
@@ -10626,7 +10626,7 @@ var require_jwtaccess = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve10();
+              resolve11();
             } catch (err) {
               reject(err);
             }
@@ -10845,7 +10845,7 @@ var require_jwtclient = __commonJS({
         }
       }
       fromStreamAsync(inputStream) {
-        return new Promise((resolve10, reject) => {
+        return new Promise((resolve11, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the service account auth settings.");
           }
@@ -10854,7 +10854,7 @@ var require_jwtclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              resolve10();
+              resolve11();
             } catch (e) {
               reject(e);
             }
@@ -10974,7 +10974,7 @@ var require_refreshclient = __commonJS({
         }
       }
       async fromStreamAsync(inputStream) {
-        return new Promise((resolve10, reject) => {
+        return new Promise((resolve11, reject) => {
           if (!inputStream) {
             return reject(new Error("Must pass in a stream containing the user refresh token."));
           }
@@ -10983,7 +10983,7 @@ var require_refreshclient = __commonJS({
             try {
               const data = JSON.parse(s);
               this.fromJSON(data);
-              return resolve10();
+              return resolve11();
             } catch (err) {
               return reject(err);
             }
@@ -12544,7 +12544,7 @@ var require_pluggable_auth_handler = __commonJS({
        * @return A promise that resolves with the executable response.
        */
       retrieveResponseFromExecutable(envMap) {
-        return new Promise((resolve10, reject) => {
+        return new Promise((resolve11, reject) => {
           const child = childProcess.spawn(this.commandComponents[0], this.commandComponents.slice(1), {
             env: { ...process.env, ...Object.fromEntries(envMap) }
           });
@@ -12566,7 +12566,7 @@ var require_pluggable_auth_handler = __commonJS({
               try {
                 const responseJson = JSON.parse(output);
                 const response = new executable_response_1.ExecutableResponse(responseJson);
-                return resolve10(response);
+                return resolve11(response);
               } catch (error) {
                 if (error instanceof executable_response_1.ExecutableResponseError) {
                   return reject(error);
@@ -13416,7 +13416,7 @@ var require_googleauth = __commonJS({
         }
       }
       fromStreamAsync(inputStream, options) {
-        return new Promise((resolve10, reject) => {
+        return new Promise((resolve11, reject) => {
           if (!inputStream) {
             throw new Error("Must pass in a stream containing the Google auth settings.");
           }
@@ -13426,7 +13426,7 @@ var require_googleauth = __commonJS({
               try {
                 const data = JSON.parse(chunks.join(""));
                 const r = this._cacheClientFromJSON(data, options);
-                return resolve10(r);
+                return resolve11(r);
               } catch (err) {
                 if (!this.keyFilename)
                   throw err;
@@ -13436,7 +13436,7 @@ var require_googleauth = __commonJS({
                 });
                 this.cachedCredential = client;
                 this.setGapicJWTValues(client);
-                return resolve10(client);
+                return resolve11(client);
               }
             } catch (err) {
               return reject(err);
@@ -13472,17 +13472,17 @@ var require_googleauth = __commonJS({
        * Run the Google Cloud SDK command that prints the default project ID
        */
       async getDefaultServiceProjectId() {
-        return new Promise((resolve10) => {
+        return new Promise((resolve11) => {
           (0, child_process_1.exec)("gcloud config config-helper --format json", (err, stdout) => {
             if (!err && stdout) {
               try {
                 const projectId = JSON.parse(stdout).configuration.properties.core.project;
-                resolve10(projectId);
+                resolve11(projectId);
                 return;
               } catch (e) {
               }
             }
-            resolve10(null);
+            resolve11(null);
           });
         });
       }
@@ -14110,26 +14110,26 @@ __export(state_exports, {
   writeJobFile: () => writeJobFile
 });
 function resolveStateDir(cwd) {
-  const workspaceRoot = (0, import_node_path10.resolve)(cwd);
-  const slug = (0, import_node_path10.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
-  const hash = (0, import_node_crypto2.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
+  const workspaceRoot = (0, import_node_path12.resolve)(cwd);
+  const slug = (0, import_node_path12.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
+  const hash = (0, import_node_crypto3.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
   const pluginDataDir = process.env[PLUGIN_DATA_ENV];
-  const stateRoot = pluginDataDir ? (0, import_node_path10.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
-  return (0, import_node_path10.join)(stateRoot, `${slug}-${hash}`);
+  const stateRoot = pluginDataDir ? (0, import_node_path12.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
+  return (0, import_node_path12.join)(stateRoot, `${slug}-${hash}`);
 }
 function ensureDir(dir) {
-  (0, import_node_fs8.mkdirSync)(dir, { recursive: true });
+  (0, import_node_fs10.mkdirSync)(dir, { recursive: true });
 }
 function stateFilePath(stateDir) {
-  return (0, import_node_path10.join)(stateDir, "state.json");
+  return (0, import_node_path12.join)(stateDir, "state.json");
 }
 function loadState(stateDir) {
   const filePath = stateFilePath(stateDir);
-  if (!(0, import_node_fs8.existsSync)(filePath)) {
+  if (!(0, import_node_fs10.existsSync)(filePath)) {
     return { version: 1, jobs: [] };
   }
   try {
-    return JSON.parse((0, import_node_fs8.readFileSync)(filePath, "utf-8"));
+    return JSON.parse((0, import_node_fs10.readFileSync)(filePath, "utf-8"));
   } catch {
     return { version: 1, jobs: [] };
   }
@@ -14139,27 +14139,27 @@ function saveState(stateDir, state) {
   if (state.jobs.length > MAX_JOBS) {
     state.jobs = state.jobs.slice(0, MAX_JOBS);
   }
-  (0, import_node_fs8.writeFileSync)(stateFilePath(stateDir), JSON.stringify(state, null, 2), "utf-8");
+  (0, import_node_fs10.writeFileSync)(stateFilePath(stateDir), JSON.stringify(state, null, 2), "utf-8");
 }
 function jobsDir(stateDir) {
-  return (0, import_node_path10.join)(stateDir, "jobs");
+  return (0, import_node_path12.join)(stateDir, "jobs");
 }
 function jobFilePath(stateDir, jobId) {
-  return (0, import_node_path10.join)(jobsDir(stateDir), `${jobId}.json`);
+  return (0, import_node_path12.join)(jobsDir(stateDir), `${jobId}.json`);
 }
 function jobLogPath(stateDir, jobId) {
-  return (0, import_node_path10.join)(jobsDir(stateDir), `${jobId}.log`);
+  return (0, import_node_path12.join)(jobsDir(stateDir), `${jobId}.log`);
 }
 function writeJobFile(stateDir, job) {
   const dir = jobsDir(stateDir);
   ensureDir(dir);
-  (0, import_node_fs8.writeFileSync)(jobFilePath(stateDir, job.id), JSON.stringify(job, null, 2), "utf-8");
+  (0, import_node_fs10.writeFileSync)(jobFilePath(stateDir, job.id), JSON.stringify(job, null, 2), "utf-8");
 }
 function readJobFile(stateDir, jobId) {
   const filePath = jobFilePath(stateDir, jobId);
-  if (!(0, import_node_fs8.existsSync)(filePath)) return null;
+  if (!(0, import_node_fs10.existsSync)(filePath)) return null;
   try {
-    return JSON.parse((0, import_node_fs8.readFileSync)(filePath, "utf-8"));
+    return JSON.parse((0, import_node_fs10.readFileSync)(filePath, "utf-8"));
   } catch {
     return null;
   }
@@ -14168,14 +14168,14 @@ function appendLog(stateDir, jobId, message) {
   const logFile = jobLogPath(stateDir, jobId);
   ensureDir(jobsDir(stateDir));
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
-  (0, import_node_fs8.writeFileSync)(logFile, `[${time}] ${message}
+  (0, import_node_fs10.writeFileSync)(logFile, `[${time}] ${message}
 `, { flag: "a" });
 }
 function readLogTail(stateDir, jobId, maxLines = 10) {
   const logFile = jobLogPath(stateDir, jobId);
-  if (!(0, import_node_fs8.existsSync)(logFile)) return [];
+  if (!(0, import_node_fs10.existsSync)(logFile)) return [];
   try {
-    const content = (0, import_node_fs8.readFileSync)(logFile, "utf-8");
+    const content = (0, import_node_fs10.readFileSync)(logFile, "utf-8");
     const lines = content.trim().split("\n");
     return lines.slice(-maxLines);
   } catch {
@@ -14184,7 +14184,7 @@ function readLogTail(stateDir, jobId, maxLines = 10) {
 }
 function generateJobId() {
   const ts = Date.now();
-  const rand = (0, import_node_crypto2.randomUUID)().slice(0, 8);
+  const rand = (0, import_node_crypto3.randomUUID)().slice(0, 8);
   return `job-${ts}-${rand}`;
 }
 function getSessionId() {
@@ -14215,18 +14215,18 @@ function listJobs(stateDir, sessionId) {
   }
   return state.jobs;
 }
-var import_node_crypto2, import_node_fs8, import_node_path10, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
+var import_node_crypto3, import_node_fs10, import_node_path12, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
 var init_state = __esm({
   "src/lib/state.ts"() {
     "use strict";
-    import_node_crypto2 = require("node:crypto");
-    import_node_fs8 = require("node:fs");
-    import_node_path10 = require("node:path");
+    import_node_crypto3 = require("node:crypto");
+    import_node_fs10 = require("node:fs");
+    import_node_path12 = require("node:path");
     import_node_os2 = require("node:os");
     MAX_JOBS = 50;
     PLUGIN_DATA_ENV = "CLAUDE_PLUGIN_DATA";
     SESSION_ID_ENV = "GEMINI_COMPANION_SESSION_ID";
-    FALLBACK_STATE_ROOT = (0, import_node_path10.join)((0, import_node_os2.tmpdir)(), "gemini-companion");
+    FALLBACK_STATE_ROOT = (0, import_node_path12.join)((0, import_node_os2.tmpdir)(), "gemini-companion");
   }
 });
 
@@ -16246,12 +16246,876 @@ function progress5(message) {
   console.error(`[${time}] ${message}`);
 }
 
-// src/commands/opinion.ts
+// src/commands/spec.ts
+var import_node_fs9 = require("node:fs");
+var import_node_path10 = require("node:path");
+
+// src/agents/spec-pipeline.ts
+var import_node_child_process2 = require("node:child_process");
+var import_node_fs8 = require("node:fs");
 var import_node_path9 = require("node:path");
 
-// src/agents/opinion-advisor.ts
+// src/lib/spec-renderer.ts
+var import_node_crypto2 = require("node:crypto");
+var META_OPEN = "<!-- gemini-spec:meta";
+var SECTION_OPEN = "<!-- gemini-spec:section";
+var COMMENT_CLOSE = "-->";
+var DEFAULT_PREAMBLE = `# \u5C08\u6848\u529F\u80FD\u898F\u683C\u66F8
+
+> \u672C\u6587\u4EF6\u7531\u7A0B\u5F0F\u78BC\u53CD\u5411\u63A8\u5C0E\u751F\u6210\uFF0C\u8ACB PM\uFF0F\u696D\u52D9\u4EBA\u54E1\u78BA\u8A8D\u3002
+> \u5982\u767C\u73FE\u8207\u5BE6\u969B\u9700\u6C42\u4E0D\u7B26\u4E4B\u8655\uFF0C\u53EF\u80FD\u4EE3\u8868\u7A0B\u5F0F\u908F\u8F2F\u6709\u8AA4\uFF0C\u8ACB\u901A\u77E5\u5DE5\u7A0B\u5718\u968A\u3002
+
+`;
+function hashContent(body) {
+  return (0, import_node_crypto2.createHash)("sha256").update(body, "utf-8").digest("hex").slice(0, 12);
+}
+function buildMetaComment(meta) {
+  return [
+    META_OPEN,
+    `project-type: ${meta.projectType}`,
+    `last-full-rebuild: ${meta.lastFullRebuild}`,
+    `generated-by: ${meta.generatedBy}`,
+    COMMENT_CLOSE
+  ].join("\n");
+}
+function parseMetaComment(text) {
+  const start = text.indexOf(META_OPEN);
+  if (start === -1) return null;
+  const end = text.indexOf(COMMENT_CLOSE, start);
+  if (end === -1) return null;
+  const body = text.slice(start + META_OPEN.length, end);
+  const fields = parseKeyValueLines(body);
+  if (!fields["project-type"] || !fields["last-full-rebuild"]) return null;
+  return {
+    projectType: fields["project-type"],
+    lastFullRebuild: fields["last-full-rebuild"],
+    generatedBy: fields["generated-by"] ?? "unknown"
+  };
+}
+function buildSectionComment(feature, contentHash) {
+  return [
+    SECTION_OPEN,
+    `sources: ${feature.sources.join(", ")}`,
+    `last-updated: ${feature.lastUpdated}`,
+    `content-hash: ${contentHash}`,
+    COMMENT_CLOSE
+  ].join("\n");
+}
+function parseSectionComment(comment) {
+  const start = comment.indexOf(SECTION_OPEN);
+  if (start === -1) return null;
+  const end = comment.indexOf(COMMENT_CLOSE, start);
+  if (end === -1) return null;
+  const body = comment.slice(start + SECTION_OPEN.length, end);
+  const fields = parseKeyValueLines(body);
+  if (!fields["sources"] || !fields["last-updated"]) return null;
+  return {
+    sources: fields["sources"].split(",").map((s) => s.trim()).filter(Boolean),
+    lastUpdated: fields["last-updated"],
+    contentHash: fields["content-hash"] ?? ""
+  };
+}
+function parseKeyValueLines(body) {
+  const out = {};
+  for (const rawLine of body.split("\n")) {
+    const line = rawLine.trim();
+    if (!line) continue;
+    const idx = line.indexOf(":");
+    if (idx === -1) continue;
+    const key = line.slice(0, idx).trim();
+    const val = line.slice(idx + 1).trim();
+    if (key) out[key] = val;
+  }
+  return out;
+}
+function renderSectionBody(feature) {
+  const parts = [];
+  parts.push("### \u7528\u9014");
+  parts.push(feature.purpose.trim());
+  parts.push("");
+  if (feature.users.length > 0) {
+    parts.push("### \u4F7F\u7528\u8005");
+    for (const u of feature.users) parts.push(`- ${u}`);
+    parts.push("");
+  }
+  if (feature.inputs.length > 0) {
+    parts.push("### \u8F38\u5165");
+    for (const f of feature.inputs) parts.push(renderField(f));
+    parts.push("");
+  }
+  if (feature.outputs.length > 0) {
+    parts.push("### \u8F38\u51FA");
+    for (const f of feature.outputs) parts.push(renderField(f));
+    parts.push("");
+  }
+  if (feature.examples.length > 0) {
+    parts.push("### \u7BC4\u4F8B\u60C5\u5883");
+    parts.push("> \u26A0\uFE0F \u4EE5\u4E0B\u7BC4\u4F8B\u4F9D\u7A0B\u5F0F\u78BC\u63A8\u65B7\uFF0C\u8ACB\u8207 PM \u78BA\u8A8D");
+    parts.push("");
+    feature.examples.forEach((ex, i) => {
+      parts.push(`**\u7BC4\u4F8B ${i + 1}\uFF1A${ex.scenario}**`);
+      if (ex.steps.length > 0) {
+        ex.steps.forEach((step, j) => parts.push(`${j + 1}. ${step}`));
+      }
+      if (ex.result) parts.push(`\u2192 ${ex.result}`);
+      parts.push("");
+    });
+  }
+  if (feature.constraints.length > 0) {
+    parts.push("### \u9650\u5236\u8207\u908A\u754C");
+    for (const c of feature.constraints) parts.push(`- ${c}`);
+    parts.push("");
+  }
+  while (parts.length > 0 && parts[parts.length - 1] === "") parts.pop();
+  return parts.join("\n");
+}
+function renderField(f) {
+  const flags = [];
+  if (f.required) flags.push("\u5FC5\u586B");
+  if (f.type) flags.push(f.type);
+  const tag = flags.length > 0 ? ` (${flags.join(", ")})` : "";
+  return `- **${f.name}**${tag}\uFF1A${f.description}`;
+}
+function renderSection(feature) {
+  const body = renderSectionBody(feature);
+  const contentHash = hashContent(body);
+  const heading = `## ${feature.name}`;
+  const meta = buildSectionComment(feature, contentHash);
+  const rawText = `${heading}
+${meta}
+
+${body}
+`;
+  return { feature, contentHash, rawText };
+}
+function renderSpecDocument(meta, sections) {
+  const parts = [];
+  parts.push(buildMetaComment(meta));
+  parts.push("");
+  parts.push(DEFAULT_PREAMBLE.trimEnd());
+  parts.push("");
+  if (sections.length > 0) {
+    parts.push("## \u529F\u80FD\u7E3D\u89BD");
+    parts.push("");
+    for (const s of sections) {
+      parts.push(`- [${s.feature.name}](#${slugify(s.feature.name)})`);
+    }
+    parts.push("");
+  }
+  for (const s of sections) {
+    parts.push(s.rawText.trimEnd());
+    parts.push("");
+  }
+  return parts.join("\n").trimEnd() + "\n";
+}
+function stripTrailingHr(text) {
+  return text.replace(/\n\s*-{3,}\s*$/, "").trimEnd();
+}
+function slugify(name) {
+  return name.toLowerCase().replace(/\s+/g, "-").replace(/[^\w\u4e00-\u9fff-]/g, "");
+}
+function parseSpecDocument(text) {
+  const meta = parseMetaComment(text);
+  const headingRe = /^##\s+(.+?)\s*$/gm;
+  const matches = [];
+  let m;
+  while ((m = headingRe.exec(text)) !== null) {
+    matches.push({ name: m[1].trim(), index: m.index });
+  }
+  if (matches.length === 0) {
+    return { meta, preamble: text, sections: [] };
+  }
+  const preamble = text.slice(0, matches[0].index);
+  const sections = [];
+  for (let i = 0; i < matches.length; i++) {
+    const start = matches[i].index;
+    const end = i + 1 < matches.length ? matches[i + 1].index : text.length;
+    const block = text.slice(start, end);
+    const parsed = parseSectionBlock(matches[i].name, block);
+    if (parsed) sections.push(parsed);
+  }
+  return { meta, preamble, sections };
+}
+function parseSectionBlock(name, block) {
+  if (name === "\u529F\u80FD\u7E3D\u89BD") return null;
+  const sectionMeta = parseSectionComment(block);
+  if (!sectionMeta) return null;
+  const closeIdx = block.indexOf(COMMENT_CLOSE);
+  if (closeIdx === -1) return null;
+  const body = stripTrailingHr(
+    block.slice(closeIdx + COMMENT_CLOSE.length).replace(/^\s*\n/, "").trimEnd()
+  );
+  const feature = {
+    name,
+    importance: 0,
+    purpose: "",
+    users: [],
+    inputs: [],
+    outputs: [],
+    examples: [],
+    constraints: [],
+    sources: sectionMeta.sources,
+    lastUpdated: sectionMeta.lastUpdated
+  };
+  return {
+    feature,
+    contentHash: sectionMeta.contentHash,
+    rawText: block.trimEnd() + "\n"
+  };
+}
+function detectManualEdit(section) {
+  const closeIdx = section.rawText.indexOf(COMMENT_CLOSE);
+  if (closeIdx === -1) return false;
+  const body = stripTrailingHr(
+    section.rawText.slice(closeIdx + COMMENT_CLOSE.length).replace(/^\s*\n/, "").trimEnd()
+  );
+  const actual = hashContent(body);
+  return section.contentHash !== "" && actual !== section.contentHash;
+}
+
+// src/agents/spec-pipeline.ts
+var MAX_CHANGED_FILE_CHARS = 8e3;
+var MAX_CHANGED_FILES_INCLUDED = 30;
+var MAX_SKELETON_CHARS2 = 2e5;
+var CHEAP_MODEL2 = "gemini-2.5-flash";
+function git(args, cwd) {
+  return (0, import_node_child_process2.execSync)(`git ${args.join(" ")}`, {
+    cwd,
+    encoding: "utf-8",
+    stdio: ["ignore", "pipe", "pipe"]
+  }).trim();
+}
+function isGitRepo(cwd) {
+  try {
+    git(["rev-parse", "--is-inside-work-tree"], cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function getHeadHash(cwd) {
+  return git(["rev-parse", "HEAD"], cwd);
+}
+function commitExists(hash, cwd) {
+  try {
+    git(["cat-file", "-e", `${hash}^{commit}`], cwd);
+    return true;
+  } catch {
+    return false;
+  }
+}
+function diffChangedFiles(fromHash, cwd) {
+  const out = git(["diff", "--name-only", `${fromHash}..HEAD`], cwd);
+  return out.split("\n").map((s) => s.trim()).filter(Boolean);
+}
+function fileMatchesSources(file, sources) {
+  for (const src of sources) {
+    if (src.endsWith("/")) {
+      if (file === src.slice(0, -1) || file.startsWith(src)) return true;
+    } else if (file === src || file.startsWith(src + "/")) {
+      return true;
+    }
+  }
+  return false;
+}
+function planIncrementalChanges(existing, changedFiles, conflictStrategy) {
+  const sectionsToRegenerate = [];
+  const sectionsToKeep = [];
+  const manualEditedSections = [];
+  const consumedFiles = /* @__PURE__ */ new Set();
+  for (const section of existing.sections) {
+    const sectionChangedFiles = changedFiles.filter(
+      (f) => fileMatchesSources(f, section.feature.sources)
+    );
+    sectionChangedFiles.forEach((f) => consumedFiles.add(f));
+    const wasEdited = detectManualEdit(section);
+    if (wasEdited) manualEditedSections.push(section);
+    const needsUpdate = sectionChangedFiles.length > 0;
+    if (!needsUpdate) {
+      sectionsToKeep.push(section);
+      continue;
+    }
+    if (wasEdited && conflictStrategy === "keep") {
+      sectionsToKeep.push(section);
+      continue;
+    }
+    sectionsToRegenerate.push(section);
+  }
+  const uncoveredChangedFiles = changedFiles.filter((f) => !consumedFiles.has(f));
+  return { sectionsToRegenerate, sectionsToKeep, uncoveredChangedFiles, manualEditedSections };
+}
+function readChangedFiles(cwd, files) {
+  const snapshots = [];
+  for (const f of files.slice(0, MAX_CHANGED_FILES_INCLUDED)) {
+    const abs = (0, import_node_path9.join)(cwd, f);
+    if (!(0, import_node_fs8.existsSync)(abs)) {
+      snapshots.push({ path: f, content: "(file deleted)", truncated: false });
+      continue;
+    }
+    try {
+      const stat = (0, import_node_fs8.statSync)(abs);
+      if (!stat.isFile()) continue;
+      const raw = (0, import_node_fs8.readFileSync)(abs, "utf-8");
+      const truncated = raw.length > MAX_CHANGED_FILE_CHARS;
+      snapshots.push({
+        path: f,
+        content: truncated ? raw.slice(0, MAX_CHANGED_FILE_CHARS) : raw,
+        truncated
+      });
+    } catch {
+      snapshots.push({ path: f, content: "(read failed)", truncated: false });
+    }
+  }
+  return snapshots;
+}
+function detectProjectTypeHint(cwd) {
+  if ((0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, ".claude-plugin"))) return "claude-code-plugin";
+  if ((0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, "Cargo.toml"))) return "rust-project";
+  if ((0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, "go.mod"))) {
+    if (anyFileMatches(cwd, /(?:router|gin|echo|fiber|chi|http\.HandleFunc)/)) {
+      return "go-web-service";
+    }
+    return "go-cli-or-library";
+  }
+  if ((0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, "package.json"))) {
+    try {
+      const pkg = JSON.parse((0, import_node_fs8.readFileSync)((0, import_node_path9.join)(cwd, "package.json"), "utf-8"));
+      if (pkg.bin) return "node-cli";
+      const deps = { ...pkg.dependencies ?? {}, ...pkg.devDependencies ?? {} };
+      if (deps["next"] || deps["react"] || deps["vue"]) return "web-frontend";
+      if (deps["express"] || deps["fastify"] || deps["koa"] || deps["hono"]) return "web-api";
+      return "node-library";
+    } catch {
+      return "node-project";
+    }
+  }
+  if ((0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, "pyproject.toml")) || (0, import_node_fs8.existsSync)((0, import_node_path9.join)(cwd, "requirements.txt"))) {
+    return "python-project";
+  }
+  return "unknown";
+}
+function anyFileMatches(cwd, pattern, depth = 3) {
+  function walk(dir, level) {
+    if (level > depth) return false;
+    let entries;
+    try {
+      entries = (0, import_node_fs8.readdirSync)(dir);
+    } catch {
+      return false;
+    }
+    for (const name of entries) {
+      if (name.startsWith(".") || name === "node_modules" || name === "vendor") continue;
+      const full = (0, import_node_path9.join)(dir, name);
+      try {
+        const st = (0, import_node_fs8.statSync)(full);
+        if (st.isDirectory()) {
+          if (walk(full, level + 1)) return true;
+        } else if (st.isFile() && /\.(go|ts|js|py)$/.test(name)) {
+          const text = (0, import_node_fs8.readFileSync)(full, "utf-8");
+          if (pattern.test(text)) return true;
+        }
+      } catch {
+      }
+    }
+    return false;
+  }
+  return walk(cwd, 0);
+}
+var OUTPUT_SCHEMA_DESCRIPTION = `
+Output STRICT JSON matching this TypeScript shape (no markdown fences, no commentary):
+
+{
+  "projectType": string,                  // e.g. "claude-code-plugin", "web-api", "cli", "library", "frontend"
+  "features": Array<{
+    "name": string,                       // \u7C21\u6F54\u7684\u7E41\u9AD4\u4E2D\u6587\u529F\u80FD\u540D\u7A31\uFF0C\u4F8B\u5982\u300C\u767B\u5165\u529F\u80FD\u300D
+    "importance": number,                 // 1-10\uFF0C10 \u70BA\u6700\u6838\u5FC3
+    "purpose": string,                    // \u4E00\u6BB5\u7E41\u9AD4\u4E2D\u6587\u6558\u8FF0\uFF0C\u8AAA\u660E\u9019\u500B\u529F\u80FD\u7684\u7528\u9014\u8207\u52D5\u6A5F
+    "users": string[],                    // \u4F7F\u7528\u6B64\u529F\u80FD\u7684\u89D2\u8272\uFF0C\u7E41\u9AD4\u4E2D\u6587
+    "inputs": Array<{ "name": string, "type"?: string, "required"?: boolean, "description": string }>,
+    "outputs": Array<{ "name": string, "type"?: string, "required"?: boolean, "description": string }>,
+    "examples": Array<{ "scenario": string, "steps": string[], "result": string }>,
+    "constraints": string[],              // \u908A\u754C\u689D\u4EF6\u3001\u9650\u5236\u3001\u7279\u6B8A\u898F\u5247
+    "sources": string[]                   // \u5C0D\u61C9\u7684\u7A0B\u5F0F\u78BC\u8DEF\u5F91\uFF08\u6A94\u6848\u6216\u4EE5 / \u7D50\u5C3E\u7684\u76EE\u9304\uFF09
+  }>
+}
+`.trim();
+var TONE_GUIDANCE = `
+\u91CD\u8981\u5BEB\u4F5C\u539F\u5247\uFF1A
+- \u53D7\u773E\u662F PM\uFF0F\u696D\u52D9\u4EBA\u54E1\uFF0C\u4E0D\u662F\u5DE5\u7A0B\u5E2B\u3002\u8ACB\u907F\u514D\u6280\u8853\u884C\u8A71\uFF08\u4E0D\u7528\u63D0 HTTP\u3001JSON\u3001SDK\u3001async \u7B49\u8A5E\u5F59\uFF09
+- \u7528\u4F7F\u7528\u8005\u8996\u89D2\u63CF\u8FF0\u529F\u80FD\uFF0C\u800C\u4E0D\u662F\u7A0B\u5F0F\u8996\u89D2\u3002\u4F8B\u5982\u8AAA\u300C\u4F7F\u7528\u8005\u8F38\u5165\u5E33\u865F\u5BC6\u78BC\u5F8C\u7CFB\u7D71\u9A57\u8B49\u8EAB\u5206\u300D\uFF0C\u4E0D\u662F\u300C\u547C\u53EB POST /login API\u300D
+- \u7BC4\u4F8B\u60C5\u5883\u8981\u5BEB\u5F97\u50CF\u4E00\u500B\u5C0F\u6545\u4E8B\uFF0C\u65B9\u4FBF PM \u60F3\u50CF\u5BE6\u969B\u4F7F\u7528\u756B\u9762
+- examples \u4E2D\u7684\u6B65\u9A5F\u8207\u7D50\u679C\u90FD\u6A19\u660E\u300C\u4F9D\u7A0B\u5F0F\u78BC\u63A8\u65B7\u300D\uFF0C\u6240\u4EE5\u76E1\u53EF\u80FD\u5177\u9AD4\u4F46\u4FDD\u7559\u53EF\u88AB\u63A8\u7FFB\u7684\u7A7A\u9593
+- \u63CF\u8FF0\u9650\u5236\u8207\u908A\u754C\u6642\uFF0C\u8981\u5BEB\u6210 PM \u770B\u5F97\u61C2\u7684\u696D\u52D9\u898F\u5247\uFF08\u4F8B\u5982\u300C\u540C\u4E00\u5E33\u865F\u6700\u591A 3 \u500B\u88DD\u7F6E\u540C\u6642\u767B\u5165\u300D\uFF09
+- \u6240\u6709 name / purpose / \u63CF\u8FF0 / \u7BC4\u4F8B\u4F7F\u7528\u7E41\u9AD4\u4E2D\u6587\u3002sources \u7DAD\u6301\u82F1\u6587\u8DEF\u5F91\u3002
+- importance \u7684\u5224\u5B9A\u57FA\u6E96\uFF1A\u662F\u5426\u662F\u4F7F\u7528\u8005\u6BCF\u5929\u6703\u7528\u5230\u7684\u6838\u5FC3\u6D41\u7A0B\uFF1B\u8D8A\u9AD8\u8D8A\u91CD\u8981
+- \u4E0D\u8981\u7DE8\u9020\u7A0B\u5F0F\u78BC\u88E1\u627E\u4E0D\u5230\u7684\u529F\u80FD\u3002\u82E5\u4E0D\u78BA\u5B9A\uFF0C\u5BE7\u53EF\u7701\u7565
+`.trim();
+function buildFullModePrompt(cwd, projectTypeHint, skeletonText) {
+  return `\u4F60\u6B63\u5728\u70BA\u4E00\u500B\u7A0B\u5F0F\u5C08\u6848\u64B0\u5BEB\u300C\u7D66\u975E\u5DE5\u7A0B\u4EBA\u54E1\u770B\u7684\u529F\u80FD\u898F\u683C\u66F8\u300D\u3002\u5C08\u6848\u7D50\u69CB\u8207\u7A0B\u5F0F\u9AA8\u67B6\u5DF2\u9810\u5148\u62BD\u51FA\u65BC\u4E0B\u65B9\uFF0C\u4F60**\u4E0D\u9700\u8981\u518D\u53BB\u8B80\u6A94**\uFF0C\u76F4\u63A5\u6839\u64DA\u4EE5\u4E0B\u8CC7\u8A0A\u63A8\u5C0E\u6240\u6709\u5C0D\u5916\u529F\u80FD\u3002
+
+\u5C08\u6848\u8DEF\u5F91\uFF1A${cwd}
+\u5C08\u6848\u985E\u578B\u63A8\u6E2C\uFF1A${projectTypeHint}
+
+${skeletonText}
+
+---
+
+\u4EFB\u52D9\uFF1A
+1. \u5224\u65B7\u9019\u500B\u5C08\u6848\u5BE6\u969B\u7684\u985E\u578B\uFF08\u524D\u7AEF / API / CLI / Plugin / Library / \u5176\u4ED6\uFF09\u3002
+2. \u5F9E\u300C\u5C0D\u5916\u63D0\u4F9B\u7684\u529F\u80FD\u9032\u5165\u9EDE\u300D\u958B\u59CB\uFF0C\u53CD\u5411\u63A8\u5C0E\u51FA\u6240\u6709\u529F\u80FD\uFF08features\uFF09\u3002
+   - Web app\uFF0FAPI\uFF1A\u4EE5\u8DEF\u7531\u70BA\u55AE\u4F4D
+   - CLI\uFF1A\u4EE5\u6307\u4EE4\u70BA\u55AE\u4F4D
+   - Library\uFF0FSDK\uFF1A\u4EE5 public exports \u70BA\u55AE\u4F4D
+   - Plugin\uFF1A\u4EE5 commands / agents / skills \u70BA\u55AE\u4F4D
+   - Frontend\uFF1A\u4EE5\u9801\u9762 / \u4E3B\u8981\u4E92\u52D5\u55AE\u5143\u70BA\u55AE\u4F4D
+3. \u6BCF\u500B feature \u90FD\u8981\u5305\u542B\uFF1Aname / importance / purpose / users / inputs / outputs / examples / constraints / sources
+4. features \u9663\u5217\u4F9D importance \u7531\u9AD8\u5230\u4F4E\u6392\u5E8F
+5. \u9810\u671F feature \u6578\u91CF\uFF1A5\uFF5E30\uFF08\u4F9D\u5C08\u6848\u898F\u6A21\uFF09
+
+${TONE_GUIDANCE}
+
+${OUTPUT_SCHEMA_DESCRIPTION}`;
+}
+function buildIncrementalPrompt(cwd, projectTypeHint, existing, plan, changedFileSnapshots) {
+  const existingFeatureLines = existing.sections.map(
+    (s) => `- \u300C${s.feature.name}\u300D sources: [${s.feature.sources.join(", ")}]${plan.sectionsToRegenerate.find((r) => r.feature.name === s.feature.name) ? "  \u2190 \u9700\u91CD\u65B0\u751F\u6210" : "  (\u4FDD\u7559\u4E0D\u8B8A)"}`
+  ).join("\n");
+  const changedFilesList = plan.uncoveredChangedFiles.length ? plan.uncoveredChangedFiles.map((f) => `  - ${f}`).join("\n") : "  (\u7121)";
+  const fileSnapshotsBlock = changedFileSnapshots.map(
+    (s) => `### ${s.path}
+\`\`\`
+${s.content}
+\`\`\`${s.truncated ? "\n(\u5167\u5BB9\u5DF2\u622A\u65B7)" : ""}`
+  ).join("\n\n");
+  return `\u4F60\u6B63\u5728\u66F4\u65B0\u4E00\u4EFD\u300C\u7D66\u975E\u5DE5\u7A0B\u4EBA\u54E1\u770B\u7684\u529F\u80FD\u898F\u683C\u66F8\u300D\u3002\u5148\u524D\u7684\u7248\u672C\u662F commit ${existing.meta?.lastFullRebuild ?? "unknown"} \u751F\u6210\u7684\uFF0C\u73FE\u5728\u5DF2\u7D93\u6709\u65B0\u7684\u7A0B\u5F0F\u78BC\u8B8A\u52D5\uFF0C\u8ACB\u6839\u64DA\u4EE5\u4E0B\u8CC7\u8A0A\u7522\u51FA**\u65B0\u589E / \u4FEE\u6539\u7684\u7AE0\u7BC0**\u3002
+
+\u5C08\u6848\u8DEF\u5F91\uFF1A${cwd}
+\u5C08\u6848\u985E\u578B\uFF1A${existing.meta?.projectType ?? projectTypeHint}
+
+## \u73FE\u6709\u529F\u80FD\u7AE0\u7BC0
+${existingFeatureLines || "(\u5C1A\u7121)"}
+
+## \u8B8A\u52D5\u6A94\u6848\u4E2D\u5C1A\u672A\u5C0D\u61C9\u5230\u4EFB\u4F55\u7AE0\u7BC0\u7684\u6A94\u6848\uFF08\u53EF\u80FD\u662F\u65B0\u529F\u80FD\uFF09
+${changedFilesList}
+
+## \u8B8A\u52D5\u6A94\u6848\u7684\u5167\u5BB9\uFF08\u7BC0\u9304\uFF09
+${fileSnapshotsBlock || "(\u7121\u8B8A\u52D5\u6A94\u6848\u5167\u5BB9)"}
+
+---
+
+\u4EFB\u52D9\uFF1A
+1. \u5C0D\u65BC\u4E0A\u65B9\u6A19\u793A\u300C\u9700\u91CD\u65B0\u751F\u6210\u300D\u7684\u7AE0\u7BC0\uFF1A\u7528\u8A72\u7AE0\u7BC0\u539F\u672C\u7684 name \u8207 sources\uFF0C\u91CD\u65B0\u7522\u51FA\u66F4\u65B0\u5F8C\u7684 FeatureSpec\u3002
+2. \u5C0D\u65BC\u300C\u5C1A\u672A\u5C0D\u61C9\u5230\u4EFB\u4F55\u7AE0\u7BC0\u300D\u7684\u8B8A\u52D5\u6A94\u6848\uFF0C\u5224\u65B7\u662F\u5426\u4EE3\u8868\u65B0\u529F\u80FD\uFF1B\u82E5\u662F\uFF0C\u65B0\u589E FeatureSpec\uFF08name \u5FC5\u9808\u8207\u73FE\u6709\u7AE0\u7BC0\u4E0D\u91CD\u8907\uFF09\u3002
+3. \u4E0D\u8981\u91CD\u8907\u8F38\u51FA\u6A19\u8A18\u300C\u4FDD\u7559\u4E0D\u8B8A\u300D\u7684\u7AE0\u7BC0\u3002
+4. \u5982\u679C\u767C\u73FE\u8B8A\u52D5\u6A94\u6848\u50C5\u662F\u5167\u90E8\u91CD\u69CB\u3001\u8207\u4F7F\u7528\u8005\u9762\u5411\u529F\u80FD\u7121\u95DC\uFF0C\u53EF\u4EE5\u8DF3\u904E\u4E0D\u7522\u51FA\u3002
+5. importance \u7684\u5224\u5B9A\u57FA\u6E96\u540C\u521D\u7248\uFF1A\u4F7F\u7528\u8005\u4F7F\u7528\u983B\u7387\u8207\u91CD\u8981\u6027\u3002
+
+${TONE_GUIDANCE}
+
+${OUTPUT_SCHEMA_DESCRIPTION}
+
+\u6CE8\u610F\uFF1Afeatures \u9663\u5217\u53EA\u9700\u8981\u5305\u542B\u300C\u9700\u8981\u65B0\u589E / \u91CD\u65B0\u751F\u6210\u300D\u7684\u529F\u80FD\uFF0C\u672A\u5217\u51FA\u7684\u7AE0\u7BC0\u6703\u7531\u7CFB\u7D71\u81EA\u52D5\u6CBF\u7528\u820A\u7248\u672C\u3002`;
+}
+async function callLLM(client, prompt, primaryModel) {
+  progress6(`Calling Gemini [${primaryModel}] (prompt: ${Math.round(prompt.length / 1024)}KB)...`);
+  const generationConfig = {
+    temperature: 0.1,
+    topP: 0.95,
+    responseMimeType: "application/json",
+    thinkingConfig: { includeThoughts: true, thinkingBudget: 8192 }
+  };
+  let response;
+  try {
+    response = await client.generateContent({
+      model: primaryModel,
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig
+    });
+  } catch (err) {
+    if (isRateLimitError3(err)) {
+      const waitSec = extractWaitTime2(err);
+      const retryModel = primaryModel !== CHEAP_MODEL2 ? CHEAP_MODEL2 : primaryModel;
+      progress6(`Rate limited on ${primaryModel}. Waiting ${waitSec}s, retrying with ${retryModel}...`);
+      await new Promise((r) => setTimeout(r, waitSec * 1e3));
+      response = await client.generateContent({
+        model: retryModel,
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { ...generationConfig, thinkingConfig: void 0 }
+      });
+    } else {
+      throw err;
+    }
+  }
+  const raw = extractText2(response);
+  return parseLLMOutput(raw);
+}
+function parseLLMOutput(raw) {
+  const cleaned = raw.replace(/^```json?\s*\n?/m, "").replace(/\n?```\s*$/m, "").trim();
+  let data;
+  try {
+    data = JSON.parse(cleaned);
+  } catch (err) {
+    throw new Error(`Failed to parse Gemini JSON output: ${err.message}
+
+Raw output:
+${raw.slice(0, 500)}`);
+  }
+  const obj = data;
+  if (!obj.features || !Array.isArray(obj.features)) {
+    throw new Error('Gemini output missing required "features" array');
+  }
+  return {
+    projectType: typeof obj.projectType === "string" ? obj.projectType : "unknown",
+    features: obj.features.map(normalizeFeature)
+  };
+}
+function normalizeFeature(f) {
+  const o = f ?? {};
+  return {
+    name: String(o.name ?? "\u672A\u547D\u540D\u529F\u80FD"),
+    importance: typeof o.importance === "number" ? o.importance : 5,
+    purpose: String(o.purpose ?? ""),
+    users: Array.isArray(o.users) ? o.users.map(String) : [],
+    inputs: Array.isArray(o.inputs) ? o.inputs : [],
+    outputs: Array.isArray(o.outputs) ? o.outputs : [],
+    examples: Array.isArray(o.examples) ? o.examples : [],
+    constraints: Array.isArray(o.constraints) ? o.constraints.map(String) : [],
+    sources: Array.isArray(o.sources) ? o.sources.map(String) : []
+  };
+}
+async function runSpecPipeline(client, options) {
+  const { cwd, outputPath, primaryModel, dryRun = false, onConflict = "abort" } = options;
+  progress6("Phase 0: Environment check...");
+  if (!isGitRepo(cwd)) {
+    throw new Error(`Not a git repository: ${cwd}. /gemini:spec requires git for version anchoring.`);
+  }
+  const headHash = getHeadHash(cwd).slice(0, 7);
+  progress6(`  HEAD: ${headHash}`);
+  progress6("Phase 1: Reading existing SPEC...");
+  const existingText = (0, import_node_fs8.existsSync)(outputPath) ? (0, import_node_fs8.readFileSync)(outputPath, "utf-8") : null;
+  const existing = existingText ? parseSpecDocument(existingText) : null;
+  let mode = "full";
+  let fromHash = null;
+  if (!options.full && existing && existing.meta) {
+    fromHash = options.fromHash ?? earliestSectionHash(existing) ?? existing.meta.lastFullRebuild;
+    if (commitExists(fromHash, cwd)) {
+      mode = "incremental";
+      progress6(`  Mode: incremental (diff from ${fromHash.slice(0, 7)})`);
+    } else {
+      progress6(`  Mode: full (anchor commit ${fromHash} not in history \u2192 fallback)`);
+    }
+  } else {
+    progress6(`  Mode: full ${options.full ? "(--full)" : "(no existing SPEC)"}`);
+  }
+  progress6("Phase 2: Building project skeleton...");
+  const skeleton = buildProjectSkeleton(cwd);
+  const skeletonText = formatSkeletonForSpec(skeleton, cwd);
+  let plan = null;
+  let changedFileSnapshots = [];
+  if (mode === "incremental" && existing && fromHash) {
+    const changedFiles = diffChangedFiles(fromHash, cwd);
+    progress6(`  ${changedFiles.length} changed files since ${fromHash.slice(0, 7)}`);
+    plan = planIncrementalChanges(existing, changedFiles, onConflict);
+    progress6(
+      `  Plan: regenerate ${plan.sectionsToRegenerate.length}, keep ${plan.sectionsToKeep.length}, uncovered ${plan.uncoveredChangedFiles.length} files`
+    );
+    if (plan.manualEditedSections.length > 0) {
+      progress6(`  \u26A0\uFE0F Detected manual edits in: ${plan.manualEditedSections.map((s) => s.feature.name).join(", ")}`);
+      if (onConflict === "abort") {
+        throw new ConflictError(plan.manualEditedSections.map((s) => s.feature.name));
+      }
+    }
+    if (plan.sectionsToRegenerate.length === 0 && plan.uncoveredChangedFiles.length === 0) {
+      progress6("  No regeneration needed. SPEC is up to date.");
+      return {
+        mode,
+        headHash,
+        document: existingText ?? "",
+        changedSections: [],
+        newSections: [],
+        skippedSections: plan.sectionsToKeep.map((s) => s.feature.name),
+        manualEditedSections: plan.manualEditedSections.map((s) => s.feature.name),
+        dryRun
+      };
+    }
+    const sampledFiles = /* @__PURE__ */ new Set();
+    for (const s of plan.sectionsToRegenerate) {
+      for (const f of changedFiles) {
+        if (fileMatchesSources(f, s.feature.sources)) sampledFiles.add(f);
+      }
+    }
+    for (const f of plan.uncoveredChangedFiles) sampledFiles.add(f);
+    changedFileSnapshots = readChangedFiles(cwd, Array.from(sampledFiles));
+  }
+  if (dryRun) {
+    progress6("Dry run: skipping LLM call.");
+    return {
+      mode,
+      headHash,
+      document: existingText ?? "",
+      changedSections: plan?.sectionsToRegenerate.map((s) => s.feature.name) ?? [],
+      newSections: plan?.uncoveredChangedFiles ?? [],
+      skippedSections: plan?.sectionsToKeep.map((s) => s.feature.name) ?? [],
+      manualEditedSections: plan?.manualEditedSections.map((s) => s.feature.name) ?? [],
+      dryRun: true
+    };
+  }
+  progress6("Phase 3: Calling Gemini...");
+  const projectTypeHint = detectProjectTypeHint(cwd);
+  const prompt = mode === "full" || !existing || !plan ? buildFullModePrompt(cwd, projectTypeHint, skeletonText) : buildIncrementalPrompt(cwd, projectTypeHint, existing, plan, changedFileSnapshots);
+  const llmOut = await callLLM(client, prompt, primaryModel);
+  progress6("Phase 4: Assembling document...");
+  const newSectionNames = [];
+  const changedSectionNames = [];
+  let finalSections = [];
+  if (mode === "full" || !existing || !plan) {
+    finalSections = llmOut.features.map((f) => featureToSpec(f, headHash)).map((feature) => renderSection(feature));
+    newSectionNames.push(...finalSections.map((s) => s.feature.name));
+  } else {
+    const updatedByName = /* @__PURE__ */ new Map();
+    for (const f of llmOut.features) {
+      const feature = featureToSpec(f, headHash);
+      updatedByName.set(feature.name, renderSection(feature));
+    }
+    const survivingExisting = [];
+    for (const old of existing.sections) {
+      if (updatedByName.has(old.feature.name)) {
+        changedSectionNames.push(old.feature.name);
+        survivingExisting.push(updatedByName.get(old.feature.name));
+        updatedByName.delete(old.feature.name);
+      } else {
+        survivingExisting.push(old);
+      }
+    }
+    const brandNew = Array.from(updatedByName.values());
+    newSectionNames.push(...brandNew.map((s) => s.feature.name));
+    finalSections = [...survivingExisting, ...brandNew].sort(
+      (a, b) => b.feature.importance - a.feature.importance
+    );
+  }
+  finalSections.sort((a, b) => b.feature.importance - a.feature.importance);
+  const meta = {
+    projectType: llmOut.projectType || existing?.meta?.projectType || "unknown",
+    lastFullRebuild: mode === "full" ? headHash : existing?.meta?.lastFullRebuild ?? headHash,
+    generatedBy: primaryModel
+  };
+  const document2 = renderSpecDocument(meta, finalSections);
+  return {
+    mode,
+    headHash,
+    document: document2,
+    changedSections: changedSectionNames,
+    newSections: newSectionNames,
+    skippedSections: plan?.sectionsToKeep.map((s) => s.feature.name) ?? [],
+    manualEditedSections: plan?.manualEditedSections.map((s) => s.feature.name) ?? [],
+    dryRun: false
+  };
+}
+function featureToSpec(f, headHash) {
+  return {
+    name: f.name,
+    importance: f.importance,
+    purpose: f.purpose,
+    users: f.users,
+    inputs: f.inputs,
+    outputs: f.outputs,
+    examples: f.examples,
+    constraints: f.constraints,
+    sources: f.sources,
+    lastUpdated: headHash
+  };
+}
+function earliestSectionHash(spec) {
+  if (spec.sections.length === 0) return null;
+  return spec.sections[0].feature.lastUpdated;
+}
+function formatSkeletonForSpec(skeleton, cwd) {
+  const parts = [];
+  parts.push("## \u5C08\u6848\u9AA8\u67B6");
+  if (skeleton.readme) {
+    parts.push("### README\uFF08\u5C08\u6848\u610F\u5716\u6700\u6B0A\u5A01\u7684\u63CF\u8FF0\uFF09");
+    parts.push(skeleton.readme);
+    parts.push("");
+  }
+  if (skeleton.entryPoints.length > 0) {
+    parts.push("### \u5075\u6E2C\u5230\u7684\u9032\u5165\u9EDE");
+    for (const ep of skeleton.entryPoints) parts.push(`- ${ep}`);
+    parts.push("");
+  }
+  const interfaceDirs = skeleton.modules.filter(
+    (m) => /(?:^|\/)(commands?|routes?|handlers?|controllers?|api|cli|pages|agents?|skills?)$/.test(m.path)
+  );
+  if (interfaceDirs.length > 0) {
+    parts.push("### \u5C0D\u5916\u4ECB\u9762\u5C64\uFF08\u53EF\u80FD\u5C0D\u61C9\u529F\u80FD\uFF09");
+    for (const m of interfaceDirs) {
+      parts.push(`#### ${m.path}`);
+      for (const f of m.files) {
+        const ex = f.exports.length > 0 ? ` \u2192 exports: ${f.exports.join(", ")}` : "";
+        const doc = f.docComment ? `  // ${f.docComment}` : "";
+        parts.push(`- ${f.path}${ex}${doc}`);
+      }
+    }
+    parts.push("");
+  }
+  parts.push("### \u6A21\u7D44\u7D50\u69CB");
+  for (const m of skeleton.modules) {
+    const role = m.inferredRole ? ` _${m.inferredRole}_` : "";
+    parts.push(`#### ${m.path}${role}`);
+    for (const f of m.files) {
+      const ex = f.exports.length > 0 ? ` \u2192 ${f.exports.join(", ")}` : "";
+      parts.push(`- ${f.path}${ex}`);
+    }
+  }
+  const pluginAuxDirs = ["commands", "agents", "skills", "hooks"];
+  for (const aux of pluginAuxDirs) {
+    const auxDir = (0, import_node_path9.join)(cwd, aux);
+    if (!(0, import_node_fs8.existsSync)(auxDir)) continue;
+    try {
+      const files = (0, import_node_fs8.readdirSync)(auxDir).filter((n) => n.endsWith(".md"));
+      if (files.length === 0) continue;
+      parts.push("");
+      parts.push(`### Plugin ${aux}/`);
+      for (const f of files) {
+        const rel = (0, import_node_path9.relative)(cwd, (0, import_node_path9.join)(auxDir, f));
+        try {
+          const head = (0, import_node_fs8.readFileSync)((0, import_node_path9.join)(auxDir, f), "utf-8").slice(0, 600);
+          parts.push(`#### ${rel}`);
+          parts.push("```");
+          parts.push(head);
+          parts.push("```");
+        } catch {
+        }
+      }
+    } catch {
+    }
+  }
+  let text = parts.join("\n");
+  if (text.length > MAX_SKELETON_CHARS2) {
+    text = text.slice(0, MAX_SKELETON_CHARS2) + "\n\n...(truncated)";
+  }
+  return text;
+}
+var ConflictError = class extends Error {
+  editedSections;
+  constructor(editedSections) {
+    super(
+      `Detected manual edits in: ${editedSections.join(", ")}. Re-run with --on-conflict keep (skip these) or --on-conflict overwrite (regenerate them).`
+    );
+    this.name = "ConflictError";
+    this.editedSections = editedSections;
+  }
+};
+function extractText2(response) {
+  const parts = [];
+  for (const candidate of response.candidates ?? []) {
+    for (const part of candidate.content?.parts ?? []) {
+      if (part.text && !part.thought) parts.push(part.text);
+    }
+  }
+  return parts.join("");
+}
+function isRateLimitError3(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  return msg.includes("429") || msg.includes("RESOURCE_EXHAUSTED") || msg.includes("quota") || msg.includes("exhausted");
+}
+function extractWaitTime2(err) {
+  const msg = err instanceof Error ? err.message : String(err);
+  const match = /reset after (\d+)s/.exec(msg);
+  return match ? parseInt(match[1], 10) + 2 : 10;
+}
+function progress6(message) {
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  console.error(`[${time}] ${message}`);
+}
+
+// src/commands/spec.ts
 var CODE_ASSIST_MODEL3 = "gemini-3-flash-preview";
 var STANDARD_FALLBACK_MODEL4 = "gemini-2.5-pro";
+var DEFAULT_OUTPUT = "docs/SPEC.md";
+async function runSpec(options = {}) {
+  const cwd = (0, import_node_path10.resolve)(options.cwd ?? process.cwd());
+  const outputPath = (0, import_node_path10.resolve)(cwd, options.output ?? DEFAULT_OUTPUT);
+  const forceStandard = options.forceStandard ?? false;
+  let auth;
+  try {
+    auth = await createAuth();
+  } catch (err) {
+    console.error(`Authentication failed: ${err.message}`);
+    console.error("Run `gemini auth login` or set GEMINI_API_KEY to continue.");
+    process.exit(1);
+  }
+  const client = new GeminiClient(auth, forceStandard);
+  const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
+  const primaryModel = useCodeAssist ? CODE_ASSIST_MODEL3 : STANDARD_FALLBACK_MODEL4;
+  progress7(`Auth type: ${auth.type}`);
+  progress7(`API: ${useCodeAssist ? "Code Assist" : "Standard"}`);
+  progress7(`Primary model: ${primaryModel}`);
+  progress7(`Project: ${cwd}`);
+  progress7(`Output: ${outputPath}`);
+  console.error("");
+  let result;
+  try {
+    result = await runSpecPipeline(client, {
+      cwd,
+      outputPath,
+      primaryModel,
+      full: options.full,
+      fromHash: options.fromHash,
+      dryRun: options.dryRun,
+      onConflict: options.onConflict ?? "abort"
+    });
+  } catch (err) {
+    if (err instanceof ConflictError) {
+      console.error("");
+      console.error("\u26A0\uFE0F  Manual edits detected in existing SPEC.md.");
+      console.error(`   Sections: ${err.editedSections.join(", ")}`);
+      console.error("");
+      console.error("Choose how to proceed and re-run:");
+      console.error("  --on-conflict keep       \u4FDD\u7559\u4EBA\u5DE5\u4FEE\u6539\u7684\u7AE0\u7BC0\uFF08\u4E0D\u91CD\u65B0\u751F\u6210\uFF09");
+      console.error("  --on-conflict overwrite  \u8986\u5BEB\u4EBA\u5DE5\u4FEE\u6539\uFF08\u5F37\u5236\u91CD\u65B0\u751F\u6210\uFF09");
+      process.exit(2);
+    }
+    throw err;
+  }
+  console.error("");
+  progress7(`Mode: ${result.mode}`);
+  progress7(`HEAD: ${result.headHash}`);
+  if (result.changedSections.length > 0) {
+    progress7(`Updated sections (${result.changedSections.length}): ${result.changedSections.join(", ")}`);
+  }
+  if (result.newSections.length > 0) {
+    progress7(`New sections (${result.newSections.length}): ${result.newSections.join(", ")}`);
+  }
+  if (result.skippedSections.length > 0) {
+    progress7(`Unchanged (${result.skippedSections.length}): ${truncList(result.skippedSections)}`);
+  }
+  if (result.manualEditedSections.length > 0) {
+    progress7(`Manual edits respected: ${result.manualEditedSections.join(", ")}`);
+  }
+  if (result.dryRun) {
+    progress7("Dry run \u2014 no file written.");
+    return;
+  }
+  (0, import_node_fs9.mkdirSync)((0, import_node_path10.dirname)(outputPath), { recursive: true });
+  (0, import_node_fs9.writeFileSync)(outputPath, result.document, "utf-8");
+  progress7(`SPEC written to: ${outputPath}`);
+  console.log(result.document);
+}
+function truncList(items) {
+  if (items.length <= 5) return items.join(", ");
+  return `${items.slice(0, 5).join(", ")}, ...(+${items.length - 5} more)`;
+}
+function progress7(message) {
+  const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
+  console.error(`[${time}] ${message}`);
+}
+
+// src/commands/opinion.ts
+var import_node_path11 = require("node:path");
+
+// src/agents/opinion-advisor.ts
+var CODE_ASSIST_MODEL4 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL5 = "gemini-2.5-pro";
 var DEFAULT_THINKING_BUDGET2 = 8192;
 function getGenerationConfig2(useCodeAssist) {
   return {
@@ -16316,8 +17180,8 @@ function buildQuery2(question) {
 }
 function createOpinionConfig(question, cwd, useCodeAssist) {
   return {
-    model: useCodeAssist ? CODE_ASSIST_MODEL3 : STANDARD_FALLBACK_MODEL4,
-    fallbackModel: STANDARD_FALLBACK_MODEL4,
+    model: useCodeAssist ? CODE_ASSIST_MODEL4 : STANDARD_FALLBACK_MODEL5,
+    fallbackModel: STANDARD_FALLBACK_MODEL5,
     systemPrompt: SYSTEM_PROMPT2,
     query: buildQuery2(question),
     tools: getToolDeclarations(),
@@ -16337,7 +17201,7 @@ function createOpinionConfig(question, cwd, useCodeAssist) {
 // src/commands/opinion.ts
 async function runOpinion(question, cwd, options = {}) {
   const { path: scopePath, forceStandard = false } = options;
-  const effectiveCwd = scopePath ? (0, import_node_path9.resolve)(cwd, scopePath) : cwd;
+  const effectiveCwd = scopePath ? (0, import_node_path11.resolve)(cwd, scopePath) : cwd;
   if (!question.trim()) {
     console.error("Error: Please provide a question for the opinion.");
     process.exit(1);
@@ -16352,8 +17216,8 @@ async function runOpinion(question, cwd, options = {}) {
   }
   const client = new GeminiClient(auth, forceStandard);
   const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
-  progress6(`Auth type: ${auth.type}`);
-  progress6(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
+  progress8(`Auth type: ${auth.type}`);
+  progress8(`API: ${useCodeAssist ? "Code Assist (gemini-3)" : "Standard (gemini-2.5)"}`);
   console.error("");
   const config = createOpinionConfig(question, effectiveCwd, useCodeAssist);
   const result = await runAgentLoop(client, config);
@@ -16364,7 +17228,7 @@ async function runOpinion(question, cwd, options = {}) {
 [gemini] Opinion ended with reason: ${result.terminateReason}`);
   }
 }
-function progress6(message) {
+function progress8(message) {
   const time = (/* @__PURE__ */ new Date()).toLocaleTimeString("en-US", { hour12: false });
   console.error(`[${time}] ${message}`);
 }
@@ -16528,14 +17392,14 @@ async function runResult(cwd, options = {}) {
 }
 
 // src/commands/background.ts
-var import_node_child_process2 = require("node:child_process");
-var import_node_path11 = require("node:path");
+var import_node_child_process3 = require("node:child_process");
+var import_node_path13 = require("node:path");
 var import_node_url = require("node:url");
 init_state();
 
 // src/agents/codebase-analyzer.ts
-var CODE_ASSIST_MODEL4 = "gemini-3-flash-preview";
-var STANDARD_FALLBACK_MODEL5 = "gemini-2.5-pro";
+var CODE_ASSIST_MODEL5 = "gemini-3-flash-preview";
+var STANDARD_FALLBACK_MODEL6 = "gemini-2.5-pro";
 var DEFAULT_THINKING_BUDGET3 = 8192;
 function getGenerationConfig3(useCodeAssist) {
   return {
@@ -16670,8 +17534,8 @@ Start by listing the root directory, then systematically explore each module.`;
 }
 function createAnalyzerConfig(cwd, useCodeAssist, focus) {
   return {
-    model: useCodeAssist ? CODE_ASSIST_MODEL4 : STANDARD_FALLBACK_MODEL5,
-    fallbackModel: STANDARD_FALLBACK_MODEL5,
+    model: useCodeAssist ? CODE_ASSIST_MODEL5 : STANDARD_FALLBACK_MODEL6,
+    fallbackModel: STANDARD_FALLBACK_MODEL6,
     systemPrompt: SYSTEM_PROMPT3,
     query: buildQuery3(cwd, focus),
     tools: getToolDeclarations(),
@@ -16709,7 +17573,7 @@ function enqueueBackground(command, args, flags, cwd) {
   createJob(stateDir, job);
   appendLog(stateDir, jobId, `Queued for background execution: ${command} "${summary}"`);
   const scriptPath = getScriptPath();
-  const child = (0, import_node_child_process2.spawn)(process.execPath, [scriptPath, "_worker", "--job-id", jobId, "--cwd", cwd], {
+  const child = (0, import_node_child_process3.spawn)(process.execPath, [scriptPath, "_worker", "--job-id", jobId, "--cwd", cwd], {
     cwd,
     env: { ...process.env, GEMINI_COMPANION_SESSION_ID: getSessionId() ?? "" },
     detached: true,
@@ -16753,7 +17617,7 @@ async function runWorker(jobId, cwd) {
     const client = new GeminiClient(auth, forceStandard);
     const useCodeAssist = !forceStandard && !!(auth.oauthClient && !client.isDegraded);
     const scopePath = typeof flags["path"] === "string" ? flags["path"] : void 0;
-    const effectiveCwd = scopePath ? (0, import_node_path11.resolve)(cwd, scopePath) : cwd;
+    const effectiveCwd = scopePath ? (0, import_node_path13.resolve)(cwd, scopePath) : cwd;
     let result;
     let rendered;
     switch (command) {
@@ -16783,10 +17647,10 @@ async function runWorker(jobId, cwd) {
     }
     const writePath = typeof flags["write"] === "string" ? flags["write"] : void 0;
     if (writePath) {
-      const { writeFileSync: writeFileSync4, mkdirSync: mkdirSync4 } = await import("node:fs");
-      const outPath = (0, import_node_path11.resolve)(cwd, writePath);
-      mkdirSync4((0, import_node_path11.dirname)(outPath), { recursive: true });
-      writeFileSync4(outPath, rendered, "utf-8");
+      const { writeFileSync: writeFileSync5, mkdirSync: mkdirSync5 } = await import("node:fs");
+      const outPath = (0, import_node_path13.resolve)(cwd, writePath);
+      mkdirSync5((0, import_node_path13.dirname)(outPath), { recursive: true });
+      writeFileSync5(outPath, rendered, "utf-8");
       appendLog(stateDir, jobId, `Report saved to: ${outPath}`);
     }
     updateJob(stateDir, jobId, {
@@ -16818,6 +17682,7 @@ function printUsage() {
       "  gemini-companion setup [--check] [--json]",
       '  gemini-companion investigate "<objective>" [--path <dir>] [--write <path>] [--background] [--standard]',
       "  gemini-companion analyze [--path <dir>] [--focus <area>] [--write <path>] [--background] [--standard]",
+      "  gemini-companion spec [--path <dir>] [--output <path>] [--full] [--from <hash>] [--dry-run] [--on-conflict abort|keep|overwrite] [--standard]",
       '  gemini-companion opinion "<question with context>" [--path <dir>] [--background] [--standard]',
       "  gemini-companion status [job-id] [--all] [--json]",
       "  gemini-companion result [job-id] [--json]",
@@ -16826,6 +17691,7 @@ function printUsage() {
       "  setup        Check authentication status and plugin readiness",
       "  investigate   Run a deep Gemini-powered codebase investigation",
       "  analyze      Produce a project context document using Gemini",
+      "  spec         Reverse-engineer a non-engineer functional spec to docs/SPEC.md",
       "  opinion      Get a second opinion from Gemini on a technical question",
       "  status       Show background job status",
       "  result       Retrieve background job output"
@@ -16888,6 +17754,20 @@ Use \`/gemini:status ${jobId}\` to check progress or \`/gemini:result ${jobId}\`
         path: typeof flags["path"] === "string" ? flags["path"] : void 0,
         focus: typeof flags["focus"] === "string" ? flags["focus"] : void 0,
         writePath: typeof flags["write"] === "string" ? flags["write"] : void 0,
+        forceStandard: flags["standard"] === true
+      });
+      break;
+    }
+    case "spec": {
+      const conflictRaw = typeof flags["on-conflict"] === "string" ? flags["on-conflict"] : "abort";
+      const onConflict = ["abort", "keep", "overwrite"].includes(conflictRaw) ? conflictRaw : "abort";
+      await runSpec({
+        cwd: typeof flags["path"] === "string" ? flags["path"] : void 0,
+        output: typeof flags["output"] === "string" ? flags["output"] : void 0,
+        full: flags["full"] === true,
+        fromHash: typeof flags["from"] === "string" ? flags["from"] : void 0,
+        dryRun: flags["dry-run"] === true,
+        onConflict,
         forceStandard: flags["standard"] === true
       });
       break;
