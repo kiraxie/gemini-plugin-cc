@@ -1,5 +1,6 @@
 ---
 description: Show status of background Gemini jobs. Optionally specify a job ID for details.
+argument-hint: "[job-id] [--all] [--json]"
 ---
 
 Check Gemini background job status. Execute:

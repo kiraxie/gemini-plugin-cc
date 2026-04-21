@@ -1,5 +1,6 @@
 ---
 description: Check Gemini authentication status and plugin readiness.
+argument-hint: "[--check] [--json]"
 ---
 
 Check the Gemini plugin setup status. Execute:

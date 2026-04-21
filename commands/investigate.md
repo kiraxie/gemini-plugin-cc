@@ -1,5 +1,6 @@
 ---
 description: Run a deep Gemini-powered codebase investigation. Provide an objective describing what to analyze.
+argument-hint: "\"<objective>\" [--path <dir>] [--write <path>] [--background] [--standard]"
 ---
 
 Run a codebase investigation using Gemini. Execute:

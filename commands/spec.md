@@ -1,5 +1,6 @@
 ---
 description: Reverse-engineer a non-engineer-facing functional spec from the codebase to docs/SPEC.md.
+argument-hint: "[--full] [--output <path>] [--from <hash>] [--dry-run] [--on-conflict abort|keep|overwrite] [--standard]"
 ---
 
 Reverse-engineer a functional specification from the codebase using Gemini.

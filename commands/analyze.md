@@ -1,5 +1,6 @@
 ---
 description: Produce a Gemini-powered project context document covering architecture, modules, conventions, and entry points.
+argument-hint: "[--focus <area>] [--write <path>] [--background] [--standard]"
 ---
 
 Run a project analysis using Gemini. Execute:
