@@ -8,7 +8,6 @@
 
 import { spawn } from 'node:child_process';
 import { resolve, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import {
   resolveStateDir, generateJobId, createJob, updateJob,
   writeJobFile, appendLog, getSessionId, jobLogPath,
@@ -69,13 +68,7 @@ export function enqueueBackground(
 }
 
 function getScriptPath(): string {
-  // In the bundled CJS output, __filename points to dist/gemini-companion.cjs
-  // We need to handle both development (ESM) and production (CJS) cases
-  if (typeof __filename !== 'undefined') {
-    return __filename;
-  }
-  // ESM fallback
-  return fileURLToPath(import.meta.url);
+  return __filename;
 }
 
 /**

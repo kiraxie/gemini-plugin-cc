@@ -299,6 +299,245 @@ var require_utils = __commonJS({
   }
 });
 
+// node_modules/punycode/punycode.js
+var require_punycode = __commonJS({
+  "node_modules/punycode/punycode.js"(exports2, module2) {
+    "use strict";
+    var maxInt = 2147483647;
+    var base = 36;
+    var tMin = 1;
+    var tMax = 26;
+    var skew = 38;
+    var damp = 700;
+    var initialBias = 72;
+    var initialN = 128;
+    var delimiter = "-";
+    var regexPunycode = /^xn--/;
+    var regexNonASCII = /[^\0-\x7F]/;
+    var regexSeparators = /[\x2E\u3002\uFF0E\uFF61]/g;
+    var errors = {
+      "overflow": "Overflow: input needs wider integers to process",
+      "not-basic": "Illegal input >= 0x80 (not a basic code point)",
+      "invalid-input": "Invalid input"
+    };
+    var baseMinusTMin = base - tMin;
+    var floor = Math.floor;
+    var stringFromCharCode = String.fromCharCode;
+    function error(type) {
+      throw new RangeError(errors[type]);
+    }
+    function map(array, callback) {
+      const result = [];
+      let length = array.length;
+      while (length--) {
+        result[length] = callback(array[length]);
+      }
+      return result;
+    }
+    function mapDomain(domain, callback) {
+      const parts = domain.split("@");
+      let result = "";
+      if (parts.length > 1) {
+        result = parts[0] + "@";
+        domain = parts[1];
+      }
+      domain = domain.replace(regexSeparators, ".");
+      const labels = domain.split(".");
+      const encoded = map(labels, callback).join(".");
+      return result + encoded;
+    }
+    function ucs2decode(string) {
+      const output = [];
+      let counter = 0;
+      const length = string.length;
+      while (counter < length) {
+        const value = string.charCodeAt(counter++);
+        if (value >= 55296 && value <= 56319 && counter < length) {
+          const extra = string.charCodeAt(counter++);
+          if ((extra & 64512) == 56320) {
+            output.push(((value & 1023) << 10) + (extra & 1023) + 65536);
+          } else {
+            output.push(value);
+            counter--;
+          }
+        } else {
+          output.push(value);
+        }
+      }
+      return output;
+    }
+    var ucs2encode = (codePoints) => String.fromCodePoint(...codePoints);
+    var basicToDigit = function(codePoint) {
+      if (codePoint >= 48 && codePoint < 58) {
+        return 26 + (codePoint - 48);
+      }
+      if (codePoint >= 65 && codePoint < 91) {
+        return codePoint - 65;
+      }
+      if (codePoint >= 97 && codePoint < 123) {
+        return codePoint - 97;
+      }
+      return base;
+    };
+    var digitToBasic = function(digit, flag) {
+      return digit + 22 + 75 * (digit < 26) - ((flag != 0) << 5);
+    };
+    var adapt = function(delta, numPoints, firstTime) {
+      let k = 0;
+      delta = firstTime ? floor(delta / damp) : delta >> 1;
+      delta += floor(delta / numPoints);
+      for (; delta > baseMinusTMin * tMax >> 1; k += base) {
+        delta = floor(delta / baseMinusTMin);
+      }
+      return floor(k + (baseMinusTMin + 1) * delta / (delta + skew));
+    };
+    var decode = function(input) {
+      const output = [];
+      const inputLength = input.length;
+      let i = 0;
+      let n = initialN;
+      let bias = initialBias;
+      let basic = input.lastIndexOf(delimiter);
+      if (basic < 0) {
+        basic = 0;
+      }
+      for (let j = 0; j < basic; ++j) {
+        if (input.charCodeAt(j) >= 128) {
+          error("not-basic");
+        }
+        output.push(input.charCodeAt(j));
+      }
+      for (let index = basic > 0 ? basic + 1 : 0; index < inputLength; ) {
+        const oldi = i;
+        for (let w = 1, k = base; ; k += base) {
+          if (index >= inputLength) {
+            error("invalid-input");
+          }
+          const digit = basicToDigit(input.charCodeAt(index++));
+          if (digit >= base) {
+            error("invalid-input");
+          }
+          if (digit > floor((maxInt - i) / w)) {
+            error("overflow");
+          }
+          i += digit * w;
+          const t = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
+          if (digit < t) {
+            break;
+          }
+          const baseMinusT = base - t;
+          if (w > floor(maxInt / baseMinusT)) {
+            error("overflow");
+          }
+          w *= baseMinusT;
+        }
+        const out = output.length + 1;
+        bias = adapt(i - oldi, out, oldi == 0);
+        if (floor(i / out) > maxInt - n) {
+          error("overflow");
+        }
+        n += floor(i / out);
+        i %= out;
+        output.splice(i++, 0, n);
+      }
+      return String.fromCodePoint(...output);
+    };
+    var encode = function(input) {
+      const output = [];
+      input = ucs2decode(input);
+      const inputLength = input.length;
+      let n = initialN;
+      let delta = 0;
+      let bias = initialBias;
+      for (const currentValue of input) {
+        if (currentValue < 128) {
+          output.push(stringFromCharCode(currentValue));
+        }
+      }
+      const basicLength = output.length;
+      let handledCPCount = basicLength;
+      if (basicLength) {
+        output.push(delimiter);
+      }
+      while (handledCPCount < inputLength) {
+        let m = maxInt;
+        for (const currentValue of input) {
+          if (currentValue >= n && currentValue < m) {
+            m = currentValue;
+          }
+        }
+        const handledCPCountPlusOne = handledCPCount + 1;
+        if (m - n > floor((maxInt - delta) / handledCPCountPlusOne)) {
+          error("overflow");
+        }
+        delta += (m - n) * handledCPCountPlusOne;
+        n = m;
+        for (const currentValue of input) {
+          if (currentValue < n && ++delta > maxInt) {
+            error("overflow");
+          }
+          if (currentValue === n) {
+            let q = delta;
+            for (let k = base; ; k += base) {
+              const t = k <= bias ? tMin : k >= bias + tMax ? tMax : k - bias;
+              if (q < t) {
+                break;
+              }
+              const qMinusT = q - t;
+              const baseMinusT = base - t;
+              output.push(
+                stringFromCharCode(digitToBasic(t + qMinusT % baseMinusT, 0))
+              );
+              q = floor(qMinusT / baseMinusT);
+            }
+            output.push(stringFromCharCode(digitToBasic(q, 0)));
+            bias = adapt(delta, handledCPCountPlusOne, handledCPCount === basicLength);
+            delta = 0;
+            ++handledCPCount;
+          }
+        }
+        ++delta;
+        ++n;
+      }
+      return output.join("");
+    };
+    var toUnicode = function(input) {
+      return mapDomain(input, function(string) {
+        return regexPunycode.test(string) ? decode(string.slice(4).toLowerCase()) : string;
+      });
+    };
+    var toASCII = function(input) {
+      return mapDomain(input, function(string) {
+        return regexNonASCII.test(string) ? "xn--" + encode(string) : string;
+      });
+    };
+    var punycode = {
+      /**
+       * A string representing the current Punycode.js version number.
+       * @memberOf punycode
+       * @type String
+       */
+      "version": "2.3.1",
+      /**
+       * An object of methods to convert from JavaScript's internal character
+       * representation (UCS-2) to Unicode code points, and back.
+       * @see <https://mathiasbynens.be/notes/javascript-encoding>
+       * @memberOf punycode
+       * @type Object
+       */
+      "ucs2": {
+        "decode": ucs2decode,
+        "encode": ucs2encode
+      },
+      "decode": decode,
+      "encode": encode,
+      "toASCII": toASCII,
+      "toUnicode": toUnicode
+    };
+    module2.exports = punycode;
+  }
+});
+
 // node_modules/tr46/lib/mappingTable.json
 var require_mappingTable = __commonJS({
   "node_modules/tr46/lib/mappingTable.json"(exports2, module2) {
@@ -310,7 +549,7 @@ var require_mappingTable = __commonJS({
 var require_tr46 = __commonJS({
   "node_modules/tr46/index.js"(exports2, module2) {
     "use strict";
-    var punycode = require("punycode");
+    var punycode = require_punycode();
     var mappingTable = require_mappingTable();
     var PROCESSING_OPTIONS = {
       TRANSITIONAL: 0,
@@ -471,7 +710,7 @@ var require_tr46 = __commonJS({
 var require_url_state_machine = __commonJS({
   "node_modules/whatwg-url/lib/url-state-machine.js"(exports2, module2) {
     "use strict";
-    var punycode = require("punycode");
+    var punycode = require_punycode();
     var tr46 = require_tr46();
     var specialSchemes = {
       ftp: 21,
@@ -3504,46 +3743,61 @@ var require_retry = __commonJS({
   }
 });
 
-// node_modules/uuid/dist/esm-node/rng.js
-function rng() {
-  if (poolPtr > rnds8Pool.length - 16) {
-    import_crypto.default.randomFillSync(rnds8Pool);
-    poolPtr = 0;
-  }
-  return rnds8Pool.slice(poolPtr, poolPtr += 16);
-}
-var import_crypto, rnds8Pool, poolPtr;
-var init_rng = __esm({
-  "node_modules/uuid/dist/esm-node/rng.js"() {
-    import_crypto = __toESM(require("crypto"));
-    rnds8Pool = new Uint8Array(256);
-    poolPtr = rnds8Pool.length;
+// node_modules/uuid/dist-node/max.js
+var max_default;
+var init_max = __esm({
+  "node_modules/uuid/dist-node/max.js"() {
+    max_default = "ffffffff-ffff-ffff-ffff-ffffffffffff";
   }
 });
 
-// node_modules/uuid/dist/esm-node/regex.js
+// node_modules/uuid/dist-node/nil.js
+var nil_default;
+var init_nil = __esm({
+  "node_modules/uuid/dist-node/nil.js"() {
+    nil_default = "00000000-0000-0000-0000-000000000000";
+  }
+});
+
+// node_modules/uuid/dist-node/regex.js
 var regex_default;
 var init_regex = __esm({
-  "node_modules/uuid/dist/esm-node/regex.js"() {
-    regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000)$/i;
+  "node_modules/uuid/dist-node/regex.js"() {
+    regex_default = /^(?:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/i;
   }
 });
 
-// node_modules/uuid/dist/esm-node/validate.js
+// node_modules/uuid/dist-node/validate.js
 function validate(uuid) {
   return typeof uuid === "string" && regex_default.test(uuid);
 }
 var validate_default;
 var init_validate = __esm({
-  "node_modules/uuid/dist/esm-node/validate.js"() {
+  "node_modules/uuid/dist-node/validate.js"() {
     init_regex();
     validate_default = validate;
   }
 });
 
-// node_modules/uuid/dist/esm-node/stringify.js
+// node_modules/uuid/dist-node/parse.js
+function parse(uuid) {
+  if (!validate_default(uuid)) {
+    throw TypeError("Invalid UUID");
+  }
+  let v;
+  return Uint8Array.of((v = parseInt(uuid.slice(0, 8), 16)) >>> 24, v >>> 16 & 255, v >>> 8 & 255, v & 255, (v = parseInt(uuid.slice(9, 13), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(14, 18), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(19, 23), 16)) >>> 8, v & 255, (v = parseInt(uuid.slice(24, 36), 16)) / 1099511627776 & 255, v / 4294967296 & 255, v >>> 24 & 255, v >>> 16 & 255, v >>> 8 & 255, v & 255);
+}
+var parse_default;
+var init_parse = __esm({
+  "node_modules/uuid/dist-node/parse.js"() {
+    init_validate();
+    parse_default = parse;
+  }
+});
+
+// node_modules/uuid/dist-node/stringify.js
 function unsafeStringify(arr, offset = 0) {
-  return byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]];
+  return (byteToHex[arr[offset + 0]] + byteToHex[arr[offset + 1]] + byteToHex[arr[offset + 2]] + byteToHex[arr[offset + 3]] + "-" + byteToHex[arr[offset + 4]] + byteToHex[arr[offset + 5]] + "-" + byteToHex[arr[offset + 6]] + byteToHex[arr[offset + 7]] + "-" + byteToHex[arr[offset + 8]] + byteToHex[arr[offset + 9]] + "-" + byteToHex[arr[offset + 10]] + byteToHex[arr[offset + 11]] + byteToHex[arr[offset + 12]] + byteToHex[arr[offset + 13]] + byteToHex[arr[offset + 14]] + byteToHex[arr[offset + 15]]).toLowerCase();
 }
 function stringify(arr, offset = 0) {
   const uuid = unsafeStringify(arr, offset);
@@ -3554,7 +3808,7 @@ function stringify(arr, offset = 0) {
 }
 var byteToHex, stringify_default;
 var init_stringify = __esm({
-  "node_modules/uuid/dist/esm-node/stringify.js"() {
+  "node_modules/uuid/dist-node/stringify.js"() {
     init_validate();
     byteToHex = [];
     for (let i = 0; i < 256; ++i) {
@@ -3564,203 +3818,217 @@ var init_stringify = __esm({
   }
 });
 
-// node_modules/uuid/dist/esm-node/v1.js
+// node_modules/uuid/dist-node/rng.js
+function rng() {
+  return crypto.getRandomValues(rnds8);
+}
+var rnds8;
+var init_rng = __esm({
+  "node_modules/uuid/dist-node/rng.js"() {
+    rnds8 = new Uint8Array(16);
+  }
+});
+
+// node_modules/uuid/dist-node/v1.js
 function v1(options, buf, offset) {
-  let i = buf && offset || 0;
-  const b = buf || new Array(16);
-  options = options || {};
-  let node = options.node || _nodeId;
-  let clockseq = options.clockseq !== void 0 ? options.clockseq : _clockseq;
-  if (node == null || clockseq == null) {
-    const seedBytes = options.random || (options.rng || rng)();
-    if (node == null) {
-      node = _nodeId = [seedBytes[0] | 1, seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]];
-    }
-    if (clockseq == null) {
-      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 16383;
+  let bytes;
+  const isV6 = options?._v6 ?? false;
+  if (options) {
+    const optionsKeys = Object.keys(options);
+    if (optionsKeys.length === 1 && optionsKeys[0] === "_v6") {
+      options = void 0;
     }
   }
-  let msecs = options.msecs !== void 0 ? options.msecs : Date.now();
-  let nsecs = options.nsecs !== void 0 ? options.nsecs : _lastNSecs + 1;
-  const dt = msecs - _lastMSecs + (nsecs - _lastNSecs) / 1e4;
-  if (dt < 0 && options.clockseq === void 0) {
-    clockseq = clockseq + 1 & 16383;
+  if (options) {
+    bytes = v1Bytes(options.random ?? options.rng?.() ?? rng(), options.msecs, options.nsecs, options.clockseq, options.node, buf, offset);
+  } else {
+    const now = Date.now();
+    const rnds = rng();
+    updateV1State(_state, now, rnds);
+    bytes = v1Bytes(rnds, _state.msecs, _state.nsecs, isV6 ? void 0 : _state.clockseq, isV6 ? void 0 : _state.node, buf, offset);
   }
-  if ((dt < 0 || msecs > _lastMSecs) && options.nsecs === void 0) {
-    nsecs = 0;
+  return buf ?? unsafeStringify(bytes);
+}
+function updateV1State(state, now, rnds) {
+  state.msecs ??= -Infinity;
+  state.nsecs ??= 0;
+  if (now === state.msecs) {
+    state.nsecs++;
+    if (state.nsecs >= 1e4) {
+      state.node = void 0;
+      state.nsecs = 0;
+    }
+  } else if (now > state.msecs) {
+    state.nsecs = 0;
+  } else if (now < state.msecs) {
+    state.node = void 0;
   }
-  if (nsecs >= 1e4) {
-    throw new Error("uuid.v1(): Can't create more than 10M uuids/sec");
+  if (!state.node) {
+    state.node = rnds.slice(10, 16);
+    state.node[0] |= 1;
+    state.clockseq = (rnds[8] << 8 | rnds[9]) & 16383;
   }
-  _lastMSecs = msecs;
-  _lastNSecs = nsecs;
-  _clockseq = clockseq;
+  state.msecs = now;
+  return state;
+}
+function v1Bytes(rnds, msecs, nsecs, clockseq, node, buf, offset = 0) {
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  if (!buf) {
+    buf = new Uint8Array(16);
+    offset = 0;
+  } else {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+  }
+  msecs ??= Date.now();
+  nsecs ??= 0;
+  clockseq ??= (rnds[8] << 8 | rnds[9]) & 16383;
+  node ??= rnds.slice(10, 16);
   msecs += 122192928e5;
   const tl = ((msecs & 268435455) * 1e4 + nsecs) % 4294967296;
-  b[i++] = tl >>> 24 & 255;
-  b[i++] = tl >>> 16 & 255;
-  b[i++] = tl >>> 8 & 255;
-  b[i++] = tl & 255;
+  buf[offset++] = tl >>> 24 & 255;
+  buf[offset++] = tl >>> 16 & 255;
+  buf[offset++] = tl >>> 8 & 255;
+  buf[offset++] = tl & 255;
   const tmh = msecs / 4294967296 * 1e4 & 268435455;
-  b[i++] = tmh >>> 8 & 255;
-  b[i++] = tmh & 255;
-  b[i++] = tmh >>> 24 & 15 | 16;
-  b[i++] = tmh >>> 16 & 255;
-  b[i++] = clockseq >>> 8 | 128;
-  b[i++] = clockseq & 255;
+  buf[offset++] = tmh >>> 8 & 255;
+  buf[offset++] = tmh & 255;
+  buf[offset++] = tmh >>> 24 & 15 | 16;
+  buf[offset++] = tmh >>> 16 & 255;
+  buf[offset++] = clockseq >>> 8 | 128;
+  buf[offset++] = clockseq & 255;
   for (let n = 0; n < 6; ++n) {
-    b[i + n] = node[n];
+    buf[offset++] = node[n];
   }
-  return buf || unsafeStringify(b);
+  return buf;
 }
-var _nodeId, _clockseq, _lastMSecs, _lastNSecs, v1_default;
+var _state, v1_default;
 var init_v1 = __esm({
-  "node_modules/uuid/dist/esm-node/v1.js"() {
+  "node_modules/uuid/dist-node/v1.js"() {
     init_rng();
     init_stringify();
-    _lastMSecs = 0;
-    _lastNSecs = 0;
+    _state = {};
     v1_default = v1;
   }
 });
 
-// node_modules/uuid/dist/esm-node/parse.js
-function parse(uuid) {
-  if (!validate_default(uuid)) {
-    throw TypeError("Invalid UUID");
-  }
-  let v;
-  const arr = new Uint8Array(16);
-  arr[0] = (v = parseInt(uuid.slice(0, 8), 16)) >>> 24;
-  arr[1] = v >>> 16 & 255;
-  arr[2] = v >>> 8 & 255;
-  arr[3] = v & 255;
-  arr[4] = (v = parseInt(uuid.slice(9, 13), 16)) >>> 8;
-  arr[5] = v & 255;
-  arr[6] = (v = parseInt(uuid.slice(14, 18), 16)) >>> 8;
-  arr[7] = v & 255;
-  arr[8] = (v = parseInt(uuid.slice(19, 23), 16)) >>> 8;
-  arr[9] = v & 255;
-  arr[10] = (v = parseInt(uuid.slice(24, 36), 16)) / 1099511627776 & 255;
-  arr[11] = v / 4294967296 & 255;
-  arr[12] = v >>> 24 & 255;
-  arr[13] = v >>> 16 & 255;
-  arr[14] = v >>> 8 & 255;
-  arr[15] = v & 255;
-  return arr;
+// node_modules/uuid/dist-node/v1ToV6.js
+function v1ToV6(uuid) {
+  const v1Bytes2 = typeof uuid === "string" ? parse_default(uuid) : uuid;
+  const v6Bytes = _v1ToV6(v1Bytes2);
+  return typeof uuid === "string" ? unsafeStringify(v6Bytes) : v6Bytes;
 }
-var parse_default;
-var init_parse = __esm({
-  "node_modules/uuid/dist/esm-node/parse.js"() {
-    init_validate();
-    parse_default = parse;
-  }
-});
-
-// node_modules/uuid/dist/esm-node/v35.js
-function stringToBytes(str) {
-  str = unescape(encodeURIComponent(str));
-  const bytes = [];
-  for (let i = 0; i < str.length; ++i) {
-    bytes.push(str.charCodeAt(i));
-  }
-  return bytes;
+function _v1ToV6(v1Bytes2) {
+  return Uint8Array.of((v1Bytes2[6] & 15) << 4 | v1Bytes2[7] >> 4 & 15, (v1Bytes2[7] & 15) << 4 | (v1Bytes2[4] & 240) >> 4, (v1Bytes2[4] & 15) << 4 | (v1Bytes2[5] & 240) >> 4, (v1Bytes2[5] & 15) << 4 | (v1Bytes2[0] & 240) >> 4, (v1Bytes2[0] & 15) << 4 | (v1Bytes2[1] & 240) >> 4, (v1Bytes2[1] & 15) << 4 | (v1Bytes2[2] & 240) >> 4, 96 | v1Bytes2[2] & 15, v1Bytes2[3], v1Bytes2[8], v1Bytes2[9], v1Bytes2[10], v1Bytes2[11], v1Bytes2[12], v1Bytes2[13], v1Bytes2[14], v1Bytes2[15]);
 }
-function v35(name, version2, hashfunc) {
-  function generateUUID(value, namespace, buf, offset) {
-    var _namespace;
-    if (typeof value === "string") {
-      value = stringToBytes(value);
-    }
-    if (typeof namespace === "string") {
-      namespace = parse_default(namespace);
-    }
-    if (((_namespace = namespace) === null || _namespace === void 0 ? void 0 : _namespace.length) !== 16) {
-      throw TypeError("Namespace must be array-like (16 iterable integer values, 0-255)");
-    }
-    let bytes = new Uint8Array(16 + value.length);
-    bytes.set(namespace);
-    bytes.set(value, namespace.length);
-    bytes = hashfunc(bytes);
-    bytes[6] = bytes[6] & 15 | version2;
-    bytes[8] = bytes[8] & 63 | 128;
-    if (buf) {
-      offset = offset || 0;
-      for (let i = 0; i < 16; ++i) {
-        buf[offset + i] = bytes[i];
-      }
-      return buf;
-    }
-    return unsafeStringify(bytes);
-  }
-  try {
-    generateUUID.name = name;
-  } catch (err) {
-  }
-  generateUUID.DNS = DNS;
-  generateUUID.URL = URL2;
-  return generateUUID;
-}
-var DNS, URL2;
-var init_v35 = __esm({
-  "node_modules/uuid/dist/esm-node/v35.js"() {
-    init_stringify();
+var init_v1ToV6 = __esm({
+  "node_modules/uuid/dist-node/v1ToV6.js"() {
     init_parse();
-    DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
-    URL2 = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+    init_stringify();
   }
 });
 
-// node_modules/uuid/dist/esm-node/md5.js
+// node_modules/uuid/dist-node/md5.js
 function md5(bytes) {
   if (Array.isArray(bytes)) {
     bytes = Buffer.from(bytes);
   } else if (typeof bytes === "string") {
     bytes = Buffer.from(bytes, "utf8");
   }
-  return import_crypto2.default.createHash("md5").update(bytes).digest();
+  return (0, import_node_crypto.createHash)("md5").update(bytes).digest();
 }
-var import_crypto2, md5_default;
+var import_node_crypto, md5_default;
 var init_md5 = __esm({
-  "node_modules/uuid/dist/esm-node/md5.js"() {
-    import_crypto2 = __toESM(require("crypto"));
+  "node_modules/uuid/dist-node/md5.js"() {
+    import_node_crypto = require("node:crypto");
     md5_default = md5;
   }
 });
 
-// node_modules/uuid/dist/esm-node/v3.js
-var v3, v3_default;
+// node_modules/uuid/dist-node/v35.js
+function stringToBytes(str) {
+  str = unescape(encodeURIComponent(str));
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; ++i) {
+    bytes[i] = str.charCodeAt(i);
+  }
+  return bytes;
+}
+function v35(version2, hash, value, namespace, buf, offset) {
+  const valueBytes = typeof value === "string" ? stringToBytes(value) : value;
+  const namespaceBytes = typeof namespace === "string" ? parse_default(namespace) : namespace;
+  if (typeof namespace === "string") {
+    namespace = parse_default(namespace);
+  }
+  if (namespace?.length !== 16) {
+    throw TypeError("Namespace must be array-like (16 iterable integer values, 0-255)");
+  }
+  let bytes = new Uint8Array(16 + valueBytes.length);
+  bytes.set(namespaceBytes);
+  bytes.set(valueBytes, namespaceBytes.length);
+  bytes = hash(bytes);
+  bytes[6] = bytes[6] & 15 | version2;
+  bytes[8] = bytes[8] & 63 | 128;
+  if (buf) {
+    offset ??= 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; ++i) {
+      buf[offset + i] = bytes[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(bytes);
+}
+var DNS, URL2;
+var init_v35 = __esm({
+  "node_modules/uuid/dist-node/v35.js"() {
+    init_parse();
+    init_stringify();
+    DNS = "6ba7b810-9dad-11d1-80b4-00c04fd430c8";
+    URL2 = "6ba7b811-9dad-11d1-80b4-00c04fd430c8";
+  }
+});
+
+// node_modules/uuid/dist-node/v3.js
+function v3(value, namespace, buf, offset) {
+  return v35(48, md5_default, value, namespace, buf, offset);
+}
+var v3_default;
 var init_v3 = __esm({
-  "node_modules/uuid/dist/esm-node/v3.js"() {
-    init_v35();
+  "node_modules/uuid/dist-node/v3.js"() {
     init_md5();
-    v3 = v35("v3", 48, md5_default);
+    init_v35();
+    v3.DNS = DNS;
+    v3.URL = URL2;
     v3_default = v3;
   }
 });
 
-// node_modules/uuid/dist/esm-node/native.js
-var import_crypto3, native_default;
-var init_native = __esm({
-  "node_modules/uuid/dist/esm-node/native.js"() {
-    import_crypto3 = __toESM(require("crypto"));
-    native_default = {
-      randomUUID: import_crypto3.default.randomUUID
-    };
-  }
-});
-
-// node_modules/uuid/dist/esm-node/v4.js
+// node_modules/uuid/dist-node/v4.js
 function v4(options, buf, offset) {
-  if (native_default.randomUUID && !buf && !options) {
-    return native_default.randomUUID();
+  if (!buf && !options && crypto.randomUUID) {
+    return crypto.randomUUID();
   }
+  return _v4(options, buf, offset);
+}
+function _v4(options, buf, offset) {
   options = options || {};
-  const rnds = options.random || (options.rng || rng)();
+  const rnds = options.random ?? options.rng?.() ?? rng();
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
   rnds[6] = rnds[6] & 15 | 64;
   rnds[8] = rnds[8] & 63 | 128;
   if (buf) {
     offset = offset || 0;
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
     for (let i = 0; i < 16; ++i) {
       buf[offset + i] = rnds[i];
     }
@@ -3770,51 +4038,158 @@ function v4(options, buf, offset) {
 }
 var v4_default;
 var init_v4 = __esm({
-  "node_modules/uuid/dist/esm-node/v4.js"() {
-    init_native();
+  "node_modules/uuid/dist-node/v4.js"() {
     init_rng();
     init_stringify();
     v4_default = v4;
   }
 });
 
-// node_modules/uuid/dist/esm-node/sha1.js
+// node_modules/uuid/dist-node/sha1.js
 function sha1(bytes) {
   if (Array.isArray(bytes)) {
     bytes = Buffer.from(bytes);
   } else if (typeof bytes === "string") {
     bytes = Buffer.from(bytes, "utf8");
   }
-  return import_crypto4.default.createHash("sha1").update(bytes).digest();
+  return (0, import_node_crypto2.createHash)("sha1").update(bytes).digest();
 }
-var import_crypto4, sha1_default;
+var import_node_crypto2, sha1_default;
 var init_sha1 = __esm({
-  "node_modules/uuid/dist/esm-node/sha1.js"() {
-    import_crypto4 = __toESM(require("crypto"));
+  "node_modules/uuid/dist-node/sha1.js"() {
+    import_node_crypto2 = require("node:crypto");
     sha1_default = sha1;
   }
 });
 
-// node_modules/uuid/dist/esm-node/v5.js
-var v5, v5_default;
+// node_modules/uuid/dist-node/v5.js
+function v5(value, namespace, buf, offset) {
+  return v35(80, sha1_default, value, namespace, buf, offset);
+}
+var v5_default;
 var init_v5 = __esm({
-  "node_modules/uuid/dist/esm-node/v5.js"() {
-    init_v35();
+  "node_modules/uuid/dist-node/v5.js"() {
     init_sha1();
-    v5 = v35("v5", 80, sha1_default);
+    init_v35();
+    v5.DNS = DNS;
+    v5.URL = URL2;
     v5_default = v5;
   }
 });
 
-// node_modules/uuid/dist/esm-node/nil.js
-var nil_default;
-var init_nil = __esm({
-  "node_modules/uuid/dist/esm-node/nil.js"() {
-    nil_default = "00000000-0000-0000-0000-000000000000";
+// node_modules/uuid/dist-node/v6.js
+function v6(options, buf, offset) {
+  options ??= {};
+  offset ??= 0;
+  let bytes = v1_default({ ...options, _v6: true }, new Uint8Array(16));
+  bytes = v1ToV6(bytes);
+  if (buf) {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+    for (let i = 0; i < 16; i++) {
+      buf[offset + i] = bytes[i];
+    }
+    return buf;
+  }
+  return unsafeStringify(bytes);
+}
+var v6_default;
+var init_v6 = __esm({
+  "node_modules/uuid/dist-node/v6.js"() {
+    init_stringify();
+    init_v1();
+    init_v1ToV6();
+    v6_default = v6;
   }
 });
 
-// node_modules/uuid/dist/esm-node/version.js
+// node_modules/uuid/dist-node/v6ToV1.js
+function v6ToV1(uuid) {
+  const v6Bytes = typeof uuid === "string" ? parse_default(uuid) : uuid;
+  const v1Bytes2 = _v6ToV1(v6Bytes);
+  return typeof uuid === "string" ? unsafeStringify(v1Bytes2) : v1Bytes2;
+}
+function _v6ToV1(v6Bytes) {
+  return Uint8Array.of((v6Bytes[3] & 15) << 4 | v6Bytes[4] >> 4 & 15, (v6Bytes[4] & 15) << 4 | (v6Bytes[5] & 240) >> 4, (v6Bytes[5] & 15) << 4 | v6Bytes[6] & 15, v6Bytes[7], (v6Bytes[1] & 15) << 4 | (v6Bytes[2] & 240) >> 4, (v6Bytes[2] & 15) << 4 | (v6Bytes[3] & 240) >> 4, 16 | (v6Bytes[0] & 240) >> 4, (v6Bytes[0] & 15) << 4 | (v6Bytes[1] & 240) >> 4, v6Bytes[8], v6Bytes[9], v6Bytes[10], v6Bytes[11], v6Bytes[12], v6Bytes[13], v6Bytes[14], v6Bytes[15]);
+}
+var init_v6ToV1 = __esm({
+  "node_modules/uuid/dist-node/v6ToV1.js"() {
+    init_parse();
+    init_stringify();
+  }
+});
+
+// node_modules/uuid/dist-node/v7.js
+function v7(options, buf, offset) {
+  let bytes;
+  if (options) {
+    bytes = v7Bytes(options.random ?? options.rng?.() ?? rng(), options.msecs, options.seq, buf, offset);
+  } else {
+    const now = Date.now();
+    const rnds = rng();
+    updateV7State(_state2, now, rnds);
+    bytes = v7Bytes(rnds, _state2.msecs, _state2.seq, buf, offset);
+  }
+  return buf ?? unsafeStringify(bytes);
+}
+function updateV7State(state, now, rnds) {
+  state.msecs ??= -Infinity;
+  state.seq ??= 0;
+  if (now > state.msecs) {
+    state.seq = rnds[6] << 23 | rnds[7] << 16 | rnds[8] << 8 | rnds[9];
+    state.msecs = now;
+  } else {
+    state.seq = state.seq + 1 | 0;
+    if (state.seq === 0) {
+      state.msecs++;
+    }
+  }
+  return state;
+}
+function v7Bytes(rnds, msecs, seq, buf, offset = 0) {
+  if (rnds.length < 16) {
+    throw new Error("Random bytes length must be >= 16");
+  }
+  if (!buf) {
+    buf = new Uint8Array(16);
+    offset = 0;
+  } else {
+    if (offset < 0 || offset + 16 > buf.length) {
+      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
+    }
+  }
+  msecs ??= Date.now();
+  seq ??= rnds[6] * 127 << 24 | rnds[7] << 16 | rnds[8] << 8 | rnds[9];
+  buf[offset++] = msecs / 1099511627776 & 255;
+  buf[offset++] = msecs / 4294967296 & 255;
+  buf[offset++] = msecs / 16777216 & 255;
+  buf[offset++] = msecs / 65536 & 255;
+  buf[offset++] = msecs / 256 & 255;
+  buf[offset++] = msecs & 255;
+  buf[offset++] = 112 | seq >>> 28 & 15;
+  buf[offset++] = seq >>> 20 & 255;
+  buf[offset++] = 128 | seq >>> 14 & 63;
+  buf[offset++] = seq >>> 6 & 255;
+  buf[offset++] = seq << 2 & 255 | rnds[10] & 3;
+  buf[offset++] = rnds[11];
+  buf[offset++] = rnds[12];
+  buf[offset++] = rnds[13];
+  buf[offset++] = rnds[14];
+  buf[offset++] = rnds[15];
+  return buf;
+}
+var _state2, v7_default;
+var init_v7 = __esm({
+  "node_modules/uuid/dist-node/v7.js"() {
+    init_rng();
+    init_stringify();
+    _state2 = {};
+    v7_default = v7;
+  }
+});
+
+// node_modules/uuid/dist-node/version.js
 function version(uuid) {
   if (!validate_default(uuid)) {
     throw TypeError("Invalid UUID");
@@ -3823,36 +4198,46 @@ function version(uuid) {
 }
 var version_default;
 var init_version = __esm({
-  "node_modules/uuid/dist/esm-node/version.js"() {
+  "node_modules/uuid/dist-node/version.js"() {
     init_validate();
     version_default = version;
   }
 });
 
-// node_modules/uuid/dist/esm-node/index.js
-var esm_node_exports = {};
-__export(esm_node_exports, {
+// node_modules/uuid/dist-node/index.js
+var dist_node_exports = {};
+__export(dist_node_exports, {
+  MAX: () => max_default,
   NIL: () => nil_default,
   parse: () => parse_default,
   stringify: () => stringify_default,
   v1: () => v1_default,
+  v1ToV6: () => v1ToV6,
   v3: () => v3_default,
   v4: () => v4_default,
   v5: () => v5_default,
+  v6: () => v6_default,
+  v6ToV1: () => v6ToV1,
+  v7: () => v7_default,
   validate: () => validate_default,
   version: () => version_default
 });
-var init_esm_node = __esm({
-  "node_modules/uuid/dist/esm-node/index.js"() {
+var init_dist_node = __esm({
+  "node_modules/uuid/dist-node/index.js"() {
+    init_max();
+    init_nil();
+    init_parse();
+    init_stringify();
     init_v1();
+    init_v1ToV6();
     init_v3();
     init_v4();
     init_v5();
-    init_nil();
-    init_version();
+    init_v6();
+    init_v6ToV1();
+    init_v7();
     init_validate();
-    init_stringify();
-    init_parse();
+    init_version();
   }
 });
 
@@ -5052,7 +5437,7 @@ var require_gaxios = __commonJS({
     var common_1 = require_common();
     var retry_1 = require_retry();
     var stream_1 = require("stream");
-    var uuid_1 = (init_esm_node(), __toCommonJS(esm_node_exports));
+    var uuid_1 = (init_dist_node(), __toCommonJS(dist_node_exports));
     var interceptor_1 = require_interceptor();
     var fetch2 = hasFetch() ? window.fetch : node_fetch_1.default;
     function hasWindow() {
@@ -8073,22 +8458,22 @@ var require_crypto2 = __commonJS({
     "use strict";
     Object.defineProperty(exports2, "__esModule", { value: true });
     exports2.NodeCrypto = void 0;
-    var crypto6 = require("crypto");
+    var crypto2 = require("crypto");
     var NodeCrypto = class {
       async sha256DigestBase64(str) {
-        return crypto6.createHash("sha256").update(str).digest("base64");
+        return crypto2.createHash("sha256").update(str).digest("base64");
       }
       randomBytesBase64(count) {
-        return crypto6.randomBytes(count).toString("base64");
+        return crypto2.randomBytes(count).toString("base64");
       }
       async verify(pubkey, data, signature) {
-        const verifier = crypto6.createVerify("RSA-SHA256");
+        const verifier = crypto2.createVerify("RSA-SHA256");
         verifier.update(data);
         verifier.end();
         return verifier.verify(pubkey, signature, "base64");
       }
       async sign(privateKey, data) {
-        const signer = crypto6.createSign("RSA-SHA256");
+        const signer = crypto2.createSign("RSA-SHA256");
         signer.update(data);
         signer.end();
         return signer.sign(privateKey, "base64");
@@ -8106,7 +8491,7 @@ var require_crypto2 = __commonJS({
        *   string in hexadecimal encoding.
        */
       async sha256DigestHex(str) {
-        return crypto6.createHash("sha256").update(str).digest("hex");
+        return crypto2.createHash("sha256").update(str).digest("hex");
       }
       /**
        * Computes the HMAC hash of a message using the provided crypto key and the
@@ -8118,7 +8503,7 @@ var require_crypto2 = __commonJS({
        */
       async signWithHmacSha256(key, msg) {
         const cryptoKey = typeof key === "string" ? key : toBuffer(key);
-        return toArrayBuffer(crypto6.createHmac("sha256", cryptoKey).update(msg).digest());
+        return toArrayBuffer(crypto2.createHmac("sha256", cryptoKey).update(msg).digest());
       }
     };
     exports2.NodeCrypto = NodeCrypto;
@@ -8896,10 +9281,10 @@ var require_oauth2client = __commonJS({
        * https://github.com/googleapis/google-auth-library-nodejs/blob/main/samples/oauth2-codeVerifier.js
        */
       async generateCodeVerifierAsync() {
-        const crypto6 = (0, crypto_1.createCrypto)();
-        const randomString = crypto6.randomBytesBase64(96);
+        const crypto2 = (0, crypto_1.createCrypto)();
+        const randomString = crypto2.randomBytesBase64(96);
         const codeVerifier = randomString.replace(/\+/g, "~").replace(/=/g, "_").replace(/\//g, "-");
-        const unencodedCodeChallenge = await crypto6.sha256DigestBase64(codeVerifier);
+        const unencodedCodeChallenge = await crypto2.sha256DigestBase64(codeVerifier);
         const codeChallenge = unencodedCodeChallenge.split("=")[0].replace(/\+/g, "-").replace(/\//g, "_");
         return { codeVerifier, codeChallenge };
       }
@@ -9343,7 +9728,7 @@ var require_oauth2client = __commonJS({
        * @return Returns a promise resolving to LoginTicket on verification.
        */
       async verifySignedJwtWithCertsAsync(jwt, certs, requiredAudience, issuers, maxExpiry) {
-        const crypto6 = (0, crypto_1.createCrypto)();
+        const crypto2 = (0, crypto_1.createCrypto)();
         if (!maxExpiry) {
           maxExpiry = _OAuth2Client.DEFAULT_MAX_TOKEN_LIFETIME_SECS_;
         }
@@ -9356,7 +9741,7 @@ var require_oauth2client = __commonJS({
         let envelope;
         let payload;
         try {
-          envelope = JSON.parse(crypto6.decodeBase64StringUtf8(segments[0]));
+          envelope = JSON.parse(crypto2.decodeBase64StringUtf8(segments[0]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token envelope: ${segments[0]}': ${err.message}`;
@@ -9367,7 +9752,7 @@ var require_oauth2client = __commonJS({
           throw new Error("Can't parse token envelope: " + segments[0]);
         }
         try {
-          payload = JSON.parse(crypto6.decodeBase64StringUtf8(segments[1]));
+          payload = JSON.parse(crypto2.decodeBase64StringUtf8(segments[1]));
         } catch (err) {
           if (err instanceof Error) {
             err.message = `Can't parse token payload '${segments[0]}`;
@@ -9384,7 +9769,7 @@ var require_oauth2client = __commonJS({
         if (envelope.alg === "ES256") {
           signature = formatEcdsa.joseToDer(signature, "ES256").toString("base64");
         }
-        const verified = await crypto6.verify(cert, signed, signature);
+        const verified = await crypto2.verify(cert, signed, signature);
         if (!verified) {
           throw new Error("Invalid token signature: " + jwt);
         }
@@ -9752,14 +10137,14 @@ var require_buffer_equal_constant_time = __commonJS({
 var require_jwa = __commonJS({
   "node_modules/jwa/index.js"(exports2, module2) {
     var Buffer2 = require_safe_buffer().Buffer;
-    var crypto6 = require("crypto");
+    var crypto2 = require("crypto");
     var formatEcdsa = require_ecdsa_sig_formatter();
     var util = require("util");
     var MSG_INVALID_ALGORITHM = '"%s" is not a valid algorithm.\n  Supported algorithms are:\n  "HS256", "HS384", "HS512", "RS256", "RS384", "RS512", "PS256", "PS384", "PS512", "ES256", "ES384", "ES512" and "none".';
     var MSG_INVALID_SECRET = "secret must be a string or buffer";
     var MSG_INVALID_VERIFIER_KEY = "key must be a string or a buffer";
     var MSG_INVALID_SIGNER_KEY = "key must be a string, a buffer or an object";
-    var supportsKeyObjects = typeof crypto6.createPublicKey === "function";
+    var supportsKeyObjects = typeof crypto2.createPublicKey === "function";
     if (supportsKeyObjects) {
       MSG_INVALID_VERIFIER_KEY += " or a KeyObject";
       MSG_INVALID_SECRET += "or a KeyObject";
@@ -9849,17 +10234,17 @@ var require_jwa = __commonJS({
       return function sign(thing, secret) {
         checkIsSecretKey(secret);
         thing = normalizeInput(thing);
-        var hmac = crypto6.createHmac("sha" + bits, secret);
+        var hmac = crypto2.createHmac("sha" + bits, secret);
         var sig = (hmac.update(thing), hmac.digest("base64"));
         return fromBase64(sig);
       };
     }
     var bufferEqual;
-    var timingSafeEqual = "timingSafeEqual" in crypto6 ? function timingSafeEqual2(a, b) {
+    var timingSafeEqual = "timingSafeEqual" in crypto2 ? function timingSafeEqual2(a, b) {
       if (a.byteLength !== b.byteLength) {
         return false;
       }
-      return crypto6.timingSafeEqual(a, b);
+      return crypto2.timingSafeEqual(a, b);
     } : function timingSafeEqual2(a, b) {
       if (!bufferEqual) {
         bufferEqual = require_buffer_equal_constant_time();
@@ -9876,7 +10261,7 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign(privateKey, "base64"));
         return fromBase64(sig);
       };
@@ -9886,7 +10271,7 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify(publicKey, signature, "base64");
       };
@@ -9895,11 +10280,11 @@ var require_jwa = __commonJS({
       return function sign(thing, privateKey) {
         checkIsPrivateKey(privateKey);
         thing = normalizeInput(thing);
-        var signer = crypto6.createSign("RSA-SHA" + bits);
+        var signer = crypto2.createSign("RSA-SHA" + bits);
         var sig = (signer.update(thing), signer.sign({
           key: privateKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
         }, "base64"));
         return fromBase64(sig);
       };
@@ -9909,12 +10294,12 @@ var require_jwa = __commonJS({
         checkIsPublicKey(publicKey);
         thing = normalizeInput(thing);
         signature = toBase64(signature);
-        var verifier = crypto6.createVerify("RSA-SHA" + bits);
+        var verifier = crypto2.createVerify("RSA-SHA" + bits);
         verifier.update(thing);
         return verifier.verify({
           key: publicKey,
-          padding: crypto6.constants.RSA_PKCS1_PSS_PADDING,
-          saltLength: crypto6.constants.RSA_PSS_SALTLEN_DIGEST
+          padding: crypto2.constants.RSA_PKCS1_PSS_PADDING,
+          saltLength: crypto2.constants.RSA_PSS_SALTLEN_DIGEST
         }, signature, "base64");
       };
     }
@@ -12072,14 +12457,14 @@ var require_awsrequestsigner = __commonJS({
       }
     };
     exports2.AwsRequestSigner = AwsRequestSigner;
-    async function sign(crypto6, key, msg) {
-      return await crypto6.signWithHmacSha256(key, msg);
+    async function sign(crypto2, key, msg) {
+      return await crypto2.signWithHmacSha256(key, msg);
     }
-    async function getSigningKey(crypto6, key, dateStamp, region, serviceName) {
-      const kDate = await sign(crypto6, `AWS4${key}`, dateStamp);
-      const kRegion = await sign(crypto6, kDate, region);
-      const kService = await sign(crypto6, kRegion, serviceName);
-      const kSigning = await sign(crypto6, kService, "aws4_request");
+    async function getSigningKey(crypto2, key, dateStamp, region, serviceName) {
+      const kDate = await sign(crypto2, `AWS4${key}`, dateStamp);
+      const kRegion = await sign(crypto2, kDate, region);
+      const kService = await sign(crypto2, kRegion, serviceName);
+      const kSigning = await sign(crypto2, kService, "aws4_request");
       return kSigning;
     }
     async function generateAuthenticationHeaderMap(options) {
@@ -13664,24 +14049,24 @@ var require_googleauth = __commonJS({
           const signed = await client.sign(data);
           return signed.signedBlob;
         }
-        const crypto6 = (0, crypto_1.createCrypto)();
+        const crypto2 = (0, crypto_1.createCrypto)();
         if (client instanceof jwtclient_1.JWT && client.key) {
-          const sign = await crypto6.sign(client.key, data);
+          const sign = await crypto2.sign(client.key, data);
           return sign;
         }
         const creds = await this.getCredentials();
         if (!creds.client_email) {
           throw new Error("Cannot sign data without `client_email`.");
         }
-        return this.signBlob(crypto6, creds.client_email, data, endpoint);
+        return this.signBlob(crypto2, creds.client_email, data, endpoint);
       }
-      async signBlob(crypto6, emailOrUniqueId, data, endpoint) {
+      async signBlob(crypto2, emailOrUniqueId, data, endpoint) {
         const url = new URL(endpoint + `${emailOrUniqueId}:signBlob`);
         const res = await this.request({
           method: "POST",
           url: url.href,
           data: {
-            payload: crypto6.encodeBase64StringUtf8(data)
+            payload: crypto2.encodeBase64StringUtf8(data)
           },
           retry: true,
           retryConfig: {
@@ -14112,7 +14497,7 @@ __export(state_exports, {
 function resolveStateDir(cwd) {
   const workspaceRoot = (0, import_node_path12.resolve)(cwd);
   const slug = (0, import_node_path12.basename)(workspaceRoot).replace(/[^a-zA-Z0-9._-]+/g, "-").replace(/^-+|-+$/g, "") || "workspace";
-  const hash = (0, import_node_crypto3.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
+  const hash = (0, import_node_crypto5.createHash)("sha256").update(workspaceRoot).digest("hex").slice(0, 16);
   const pluginDataDir = process.env[PLUGIN_DATA_ENV];
   const stateRoot = pluginDataDir ? (0, import_node_path12.join)(pluginDataDir, "state") : FALLBACK_STATE_ROOT;
   return (0, import_node_path12.join)(stateRoot, `${slug}-${hash}`);
@@ -14184,7 +14569,7 @@ function readLogTail(stateDir, jobId, maxLines = 10) {
 }
 function generateJobId() {
   const ts = Date.now();
-  const rand = (0, import_node_crypto3.randomUUID)().slice(0, 8);
+  const rand = (0, import_node_crypto5.randomUUID)().slice(0, 8);
   return `job-${ts}-${rand}`;
 }
 function getSessionId() {
@@ -14215,11 +14600,11 @@ function listJobs(stateDir, sessionId) {
   }
   return state.jobs;
 }
-var import_node_crypto3, import_node_fs10, import_node_path12, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
+var import_node_crypto5, import_node_fs10, import_node_path12, import_node_os2, MAX_JOBS, PLUGIN_DATA_ENV, SESSION_ID_ENV, FALLBACK_STATE_ROOT;
 var init_state = __esm({
   "src/lib/state.ts"() {
     "use strict";
-    import_node_crypto3 = require("node:crypto");
+    import_node_crypto5 = require("node:crypto");
     import_node_fs10 = require("node:fs");
     import_node_path12 = require("node:path");
     import_node_os2 = require("node:os");
@@ -14355,7 +14740,7 @@ var import_node_fs5 = require("node:fs");
 var import_node_path6 = require("node:path");
 
 // src/lib/code-assist-client.ts
-var import_node_crypto = require("node:crypto");
+var import_node_crypto3 = require("node:crypto");
 var os = __toESM(require("node:os"), 1);
 
 // src/lib/sse-parser.ts
@@ -14413,7 +14798,7 @@ function toCARequest(params, sessionId, project, enableCredits) {
   return {
     model: params.model,
     project,
-    user_prompt_id: (0, import_node_crypto.randomUUID)(),
+    user_prompt_id: (0, import_node_crypto3.randomUUID)(),
     request: toVertexRequest(params, sessionId),
     enabled_credit_types: enableCredits ? ["GOOGLE_ONE_AI"] : void 0
   };
@@ -14428,7 +14813,7 @@ function fromCAResponse(res) {
 var CodeAssistClient = class {
   constructor(oauthClient) {
     this.oauthClient = oauthClient;
-    this.sessionId = (0, import_node_crypto.randomUUID)();
+    this.sessionId = (0, import_node_crypto3.randomUUID)();
     this.userAgent = buildUserAgent();
   }
   projectId;
@@ -16256,7 +16641,7 @@ var import_node_fs8 = require("node:fs");
 var import_node_path9 = require("node:path");
 
 // src/lib/spec-renderer.ts
-var import_node_crypto2 = require("node:crypto");
+var import_node_crypto4 = require("node:crypto");
 var META_OPEN = "<!-- gemini-spec:meta";
 var SECTION_OPEN = "<!-- gemini-spec:section";
 var COMMENT_CLOSE = "-->";
@@ -16267,7 +16652,7 @@ var DEFAULT_PREAMBLE = `# \u5C08\u6848\u529F\u80FD\u898F\u683C\u66F8
 
 `;
 function hashContent(body) {
-  return (0, import_node_crypto2.createHash)("sha256").update(body, "utf-8").digest("hex").slice(0, 12);
+  return (0, import_node_crypto4.createHash)("sha256").update(body, "utf-8").digest("hex").slice(0, 12);
 }
 function buildMetaComment(meta) {
   return [
@@ -17394,7 +17779,6 @@ async function runResult(cwd, options = {}) {
 // src/commands/background.ts
 var import_node_child_process3 = require("node:child_process");
 var import_node_path13 = require("node:path");
-var import_node_url = require("node:url");
 init_state();
 
 // src/agents/codebase-analyzer.ts
@@ -17553,7 +17937,6 @@ function createAnalyzerConfig(cwd, useCodeAssist, focus) {
 }
 
 // src/commands/background.ts
-var import_meta = {};
 function enqueueBackground(command, args, flags, cwd) {
   const stateDir = resolveStateDir(cwd);
   const jobId = generateJobId();
@@ -17584,10 +17967,7 @@ function enqueueBackground(command, args, flags, cwd) {
   return jobId;
 }
 function getScriptPath() {
-  if (typeof __filename !== "undefined") {
-    return __filename;
-  }
-  return (0, import_node_url.fileURLToPath)(import_meta.url);
+  return __filename;
 }
 async function runWorker(jobId, cwd) {
   const stateDir = resolveStateDir(cwd);

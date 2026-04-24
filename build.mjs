@@ -19,8 +19,15 @@ await build({
   format: 'cjs',
   sourcemap: false,
   minify: false,
-  // Keep Node built-ins external (they're available at runtime)
-  external: builtinModules.flatMap(m => [m, `node:${m}`]),
+  // Keep Node built-ins external (they're available at runtime), except
+  // `punycode` — the built-in is deprecated (DEP0040), so alias it to the
+  // userland package which gets bundled instead.
+  external: builtinModules
+    .flatMap(m => [m, `node:${m}`])
+    .filter(m => m !== 'punycode' && m !== 'node:punycode'),
+  alias: {
+    punycode: 'punycode/',
+  },
 });
 
 console.log('Built dist/gemini-companion.cjs');
